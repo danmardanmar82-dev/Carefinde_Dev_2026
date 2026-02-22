@@ -153,14 +153,14 @@ All API routes are under `/api` prefix via `APIRouter`. Key endpoints:
 - `GET /api/config` — returns public keys (stripe_pk, maps_key)
 - `GET /api/health` — service status check
 
-### Active Plan
-
-- Plan folder: `plans/2026-02-22_carefinde_rebuild/`
-- **All 6 tasks completed** (full rebuild: DB, backend, frontend, auth, dashboards)
-- App is running and functional; subsequent work is iterative improvements / fixes
-
 ### Port Management
 
 - The app uses `$APP_PORT` env var (allocated per project in the sandbox)
 - To restart after a crash: `kill $(lsof -ti:$APP_PORT) 2>/dev/null; sleep 2 && ./start.sh`
 - Always check with `echo $APP_PORT` before starting server or opening localhost
+
+### Active Plan
+
+- Plan folder: `plans/2026-02-22_carefinde_rebuild/`
+- **All 6 tasks completed** (full rebuild: DB, backend, frontend, auth, dashboards)
+- App is running and functional; subsequent work is iterative improvements / fixes
