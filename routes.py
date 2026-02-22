@@ -8,6 +8,7 @@ from typing import Optional
 
 import psycopg2
 import psycopg2.extras
+from urllib.parse import urlparse
 import stripe
 from fastapi import FastAPI, APIRouter, Request, Response, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -22,10 +23,11 @@ SESSIONS: dict = {}
 
 
 def get_db_url() -> str:
-    url = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL") or ""
-    if not url:
+    raw = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL") or ""
+    if not raw:
         raise RuntimeError("DATABASE_URL nie jest ustawiony. Dodaj zmienną środowiskową NEON_DATABASE_URL.")
-    return url
+    # strip whitespace/comments and remove unsupported channel_binding param
+    return raw.strip().split()[0].replace("&channel_binding=require", "")
 
 
 def get_openai():
@@ -56,7 +58,17 @@ def get_stripe_pub():
 @contextmanager
 def get_db():
     """Context manager zwracający połączenie psycopg2 z RealDictCursor."""
-    conn = psycopg2.connect(get_db_url(), cursor_factory=psycopg2.extras.RealDictCursor)
+    p = urlparse(get_db_url())
+    conn = psycopg2.connect(
+        host=p.hostname,
+        port=p.port or 5432,
+        dbname=p.path.lstrip("/"),
+        user=p.username,
+        password=p.password,
+        sslmode="require",
+        connect_timeout=10,
+        cursor_factory=psycopg2.extras.RealDictCursor,
+    )
     try:
         yield conn
         conn.commit()
