@@ -1,20 +1,470 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Data App</title>
-    <link rel="stylesheet" href="/static/styles.css?v={{ css_hash }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Carefinder NL – Thuiszorg & Verzorgingshuizen</title>
+<script src="https://js.stripe.com/v3/"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+<style>
+:root{--gold:#ffd700;--dark:#0d0d0d;--sidebar:300px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:var(--dark);color:#fff;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{background:#111;border-bottom:3px solid var(--gold);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:1000}
+.logo{font-size:20px;font-weight:900;letter-spacing:2px;color:var(--gold)}
+.logo span{color:#fff}
+.lang-btns button{background:transparent;border:1px solid #444;color:#aaa;padding:3px 8px;margin-left:4px;cursor:pointer;border-radius:4px;font-size:12px}
+.lang-btns button:hover,.lang-btns button.active{border-color:var(--gold);color:var(--gold)}
+#main{display:flex;flex:1;overflow:hidden}
+#sidebar{width:var(--sidebar);background:#111;border-right:1px solid #222;display:flex;flex-direction:column;padding:14px;overflow-y:auto;flex-shrink:0}
+.sidebar-btn{width:100%;padding:12px;margin-bottom:9px;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;text-transform:uppercase;letter-spacing:1px;transition:opacity .2s}
+.btn-login{background:#1a6cff;color:#fff}
+.btn-tz{background:#111;color:#fff;border-left:5px solid #22c55e;text-align:left;padding-left:14px}
+.btn-bh{background:#111;color:#fff;border-left:5px solid #3b82f6;text-align:left;padding-left:14px}
+.btn-all{background:#222;color:#aaa;border-left:5px solid #555;text-align:left;padding-left:14px}
+.btn-premium{background:var(--gold);color:#000;margin-top:auto}
+.btn-topup{background:#333;color:#fff}
+.sidebar-btn:hover{opacity:.85}
+.stats-box{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px}
+.stats-box span{color:var(--gold);font-weight:700}
+.search-box{position:relative;margin-bottom:12px}
+.search-box input{width:100%;padding:9px 12px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:7px;font-size:13px;outline:none}
+.search-box input:focus{border-color:var(--gold)}
+.search-results{position:absolute;top:100%;left:0;right:0;background:#1a1a1a;border:1px solid #333;border-radius:0 0 7px 7px;max-height:180px;overflow-y:auto;z-index:9999}
+.search-item{padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #222}
+.search-item:hover{background:#222}
+.search-item .city{color:#888;font-size:11px}
+.filter-label{font-size:11px;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+#map{flex:1;z-index:1;min-height:400px}
+#ads{width:200px;background:#0d0d0d;border-left:1px solid #222;overflow:hidden;flex-shrink:0}
+.ads-inner{display:flex;flex-direction:column;animation:scrollUp 30s linear infinite}
+.ads-inner:hover{animation-play-state:paused}
+@keyframes scrollUp{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.ad-card{background:#1a1a1a;border:1px solid var(--gold);margin:12px 8px;padding:14px;border-radius:10px;text-align:center;font-size:12px;cursor:pointer}
+.ad-card .tag{font-size:10px;color:#888;margin-bottom:4px}
+.ad-card strong{color:var(--gold);font-size:13px}
+#ai-btn{position:fixed;bottom:24px;right:24px;width:62px;height:62px;background:var(--gold);border-radius:50%;z-index:4000;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;box-shadow:0 4px 18px rgba(255,215,0,.35)}
+#ai-btn span{font-size:9px;font-weight:900;color:#000;line-height:1.2}
+#ai-window{display:none;position:fixed;bottom:100px;right:24px;width:340px;height:460px;background:#111;border:2px solid var(--gold);border-radius:14px;flex-direction:column;z-index:4001;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7)}
+#ai-header{background:var(--gold);color:#000;padding:10px 14px;font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+#ai-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.msg-user{align-self:flex-end;background:#1a6cff;color:#fff;padding:8px 12px;border-radius:10px 10px 2px 10px;font-size:13px;max-width:85%}
+.msg-ai{align-self:flex-start;background:#1a1a1a;color:#e0e0e0;padding:8px 12px;border-radius:10px 10px 10px 2px;font-size:13px;max-width:90%;border:1px solid #333;white-space:pre-wrap}
+.msg-typing{color:#888;font-style:italic;font-size:12px;align-self:flex-start}
+#ai-input-row{display:flex;gap:6px;padding:10px;border-top:1px solid #222}
+#ai-input{flex:1;padding:8px 11px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:7px;font-size:13px;outline:none}
+#ai-input:focus{border-color:var(--gold)}
+#ai-send{background:var(--gold);border:none;padding:8px 12px;border-radius:7px;font-weight:700;cursor:pointer;font-size:15px}
+.leaflet-popup-content-wrapper{border-radius:10px!important;box-shadow:0 4px 20px rgba(0,0,0,.25)!important;padding:0!important;overflow:hidden}
+.leaflet-popup-content{margin:0!important;min-width:200px}
+.popup-inner{padding:14px}
+.popup-name{font-weight:800;font-size:15px;margin-bottom:3px;color:#111}
+.popup-cat{font-size:10px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.popup-premium-badge{background:#ffd700;color:#7a5800;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:8px;letter-spacing:.04em}
+.popup-contact{font-size:12px;color:#222;margin-bottom:4px}
+.popup-slots{font-size:12px;color:#1a6cff;font-weight:600;margin-bottom:4px}
+.popup-ad{font-size:11px;color:#555;margin-top:8px;padding-top:8px;border-top:1px solid #eee;line-height:1.4;max-height:32px;overflow:hidden;transition:max-height .35s ease,opacity .35s;opacity:.7;cursor:pointer}
+.popup-ad:hover,.popup-ad.expanded{max-height:200px;opacity:1}
+.popup-ad-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:3px}
+.popup-free{font-size:13px;font-weight:700;color:#16a34a;margin-bottom:4px}
+.popup-full{font-size:13px;font-weight:700;color:#dc2626;margin-bottom:4px}
+.pin-gold{width:18px;height:18px;background:#ffd700;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #7a5800;box-shadow:0 0 8px rgba(255,215,0,.7)}
+.pin-blue{width:14px;height:14px;background:#3b82f6;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(59,130,246,.6)}
+.pin-green{width:14px;height:14px;background:#22c55e;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(34,197,94,.6)}
+footer{background:#111;border-top:1px solid #222;padding:6px 16px;font-size:11px;color:#444;display:flex;justify-content:space-between;flex-shrink:0}
+footer a{color:#666;text-decoration:none}
+footer a:hover{color:var(--gold)}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;padding:10px 22px;border-radius:8px;font-weight:700;z-index:9999;display:none;font-size:14px}
+@media(max-width:700px){
+  #sidebar{width:100%;height:auto;flex-direction:row;flex-wrap:wrap;padding:8px;border-right:none;border-bottom:1px solid #222}
+  #main{flex-direction:column}
+  #ads{display:none}
+  .sidebar-btn{width:calc(50% - 4px);margin:2px}
+  .stats-box,.search-box,.filter-label{width:100%}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Memex</h1>
-        <p>Start building something amazing.</p>
-        <p id="status"><span class="dot"></span><span class="text">Checking API…</span></p>
+
+<header>
+  <div class="logo">CARE<span>FINDER</span> NL</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div id="stats-header" style="font-size:12px;color:#666"></div>
+    <div class="lang-btns">
+      <button onclick="setLang('nl')" class="active" id="l-nl">NL</button>
+      <button onclick="setLang('pl')" id="l-pl">PL</button>
+      <button onclick="setLang('de')" id="l-de">DE</button>
+      <button onclick="setLang('en')" id="l-en">EN</button>
     </div>
-    <script src="/static/app.js?v={{ js_hash }}"></script>
+  </div>
+</header>
+
+<div id="main">
+  <div id="sidebar">
+    <button class="sidebar-btn btn-login" onclick="window.location.href='/login'" id="t-login">PARTNER LOG-IN</button>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Zoek stad of organisatie..." oninput="onSearch(this.value)">
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div class="filter-label" id="t-filter-label">Filter categorie</div>
+    <button class="sidebar-btn btn-all" id="t-all" onclick="filterMap(null)">ALLE ZORGAANBIEDERS</button>
+    <button class="sidebar-btn btn-tz" id="t-tz" onclick="filterMap('thuiszorg')">THUISZORG</button>
+    <button class="sidebar-btn btn-bh" id="t-bh" onclick="filterMap('verzorgingshuis')">VERZORGINGSHUIZEN</button>
+    <div class="stats-box" style="margin-top:10px">
+      <div id="t-stats-label" style="color:#666;margin-bottom:6px;font-size:11px">AANBIEDERS OP DE KAART</div>
+      <div>🟢 Thuiszorg: <span id="cnt-tz">–</span></div>
+      <div>🔵 Verz.huis: <span id="cnt-bh">–</span></div>
+      <div>⭐ Premium: <span id="cnt-pm">–</span></div>
+    </div>
+    <div style="margin-top:auto;padding-top:12px">
+      <button class="sidebar-btn btn-premium" id="t-premium" onclick="startPay()">⭐ UPGRADE PREMIUM (€150)</button>
+      <button class="sidebar-btn btn-topup" id="t-topup" onclick="window.location.href='/login'">PARTNER AANMELDEN</button>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="ads">
+    <div style="padding:8px;text-align:center;font-size:10px;color:#444;border-bottom:1px solid #222">PREMIUM PARTNERS</div>
+    <div class="ads-inner" id="ads-inner"></div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 Carefinder NL — DanmarImport &amp; Daniel Buszydlo</span>
+  <span>
+    <a href="/algemene-voorwaarden" target="_blank">Algemene Voorwaarden</a>
+    &nbsp;·&nbsp;<a href="mailto:info@carefinder.nl">Contact</a>
+  </span>
+</footer>
+
+<div id="toast"></div>
+
+<div id="terms" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:8000;align-items:center;justify-content:center">
+  <div style="background:#111;border:2px solid var(--gold);border-radius:14px;padding:30px;max-width:600px;max-height:80vh;overflow-y:auto;position:relative">
+    <span onclick="document.getElementById('terms').style.display='none'" style="position:absolute;top:12px;right:16px;cursor:pointer;font-size:24px;color:var(--gold)">×</span>
+    <h2 style="color:var(--gold);margin-bottom:16px">Algemene Voorwaarden</h2>
+    <p style="color:#aaa;line-height:1.7;font-size:14px">Het platform Carefinder NL is eigendom van Daniel Buszydlo. Premium abonnement €150/maand. Alle rechten voorbehouden. Laatste update: februari 2026.</p>
+  </div>
+</div>
+
+<button id="ai-btn" onclick="toggleAI()">
+  <span>CHAT</span><span style="font-size:18px;font-weight:900">AI</span>
+</button>
+
+<div id="ai-window">
+  <div id="ai-header">
+    <span>🏥 CAREFINDER AI ASSISTENT</span>
+    <span onclick="toggleAI()" style="cursor:pointer;font-size:18px">×</span>
+  </div>
+  <div id="ai-messages">
+    <div class="msg-ai" id="t-ai-welcome">Hallo! Ik ben de Carefinder AI-assistent, gespecialiseerd in thuiszorg en verzorgingshuizen in Nederland. Stel mij vragen over indicaties, vergoedingen of zorgaanbieders. 🇳🇱</div>
+  </div>
+  <div id="ai-input-row">
+    <input type="text" id="ai-input" placeholder="Uw vraag..." onkeydown="if(event.key==='Enter')sendAI()">
+    <button id="ai-send" onclick="sendAI()">➤</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script>
+/* ── CONFIG ── */
+const STRIPE_PUB = "{{ stripe_pub }}";
+const stripe = STRIPE_PUB && STRIPE_PUB !== 'None' && STRIPE_PUB !== '' ? Stripe(STRIPE_PUB) : null;
+
+/* ── MAP INIT ── */
+const map = L.map('map', {center:[52.13,5.29], zoom:7, zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
+  maxZoom:19
+}).addTo(map);
+
+/* ── CLUSTER GROUP ── */
+const cluster = L.markerClusterGroup({
+  maxClusterRadius: 60,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  iconCreateFunction: function(c) {
+    const n = c.getChildCount();
+    const hasPremium = c.getAllChildMarkers().some(m => m.options.isPremium);
+    const bg = hasPremium ? '#ffd700' : '#3b82f6';
+    const fg = hasPremium ? '#7a5800' : '#fff';
+    return L.divIcon({
+      html:`<div style="width:36px;height:36px;background:${bg};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:${fg};box-shadow:0 2px 8px rgba(0,0,0,.35);border:2px solid #fff">${n}</div>`,
+      className:'', iconSize:[36,36]
+    });
+  }
+});
+map.addLayer(cluster);
+let allFirms = [], activeFilter = null;
+
+/* ── ICONS ── */
+function makeIcon(isPremium, cat) {
+  if (isPremium) {
+    return L.divIcon({
+      className:'',
+      html:`<div style="position:relative;width:22px;height:28px">
+        <div style="width:22px;height:22px;background:#ffd700;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #b8860b;box-shadow:0 0 10px rgba(255,215,0,.8)"></div>
+        <div style="position:absolute;top:3px;left:3px;width:10px;height:10px;background:#fff;border-radius:50%;transform:rotate(45deg)"></div>
+      </div>`,
+      iconSize:[22,28], iconAnchor:[11,28], popupAnchor:[0,-28]
+    });
+  }
+  const color = cat === 'thuiszorg' ? '#22c55e' : '#3b82f6';
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px ${color}99"></div>`,
+    iconSize:[14,14], iconAnchor:[7,7], popupAnchor:[0,-8]
+  });
+}
+
+/* ── POPUP BUILDER ── */
+function buildPopup(f) {
+  const cat = f.category === 'thuiszorg' ? '🏠 Thuiszorg' : '🏥 Verzorgingshuis';
+  const city = f.city ? ` · ${f.city}` : '';
+  if (!f.is_premium) {
+    return `<div class="popup-inner">
+      <div class="popup-name">${esc(f.name)}</div>
+      <div class="popup-cat">${cat}${city}</div>
+      <div style="font-size:11px;color:#aaa;font-style:italic;margin-top:6px">Contactgegevens beschikbaar bij Premium ⭐</div>
+    </div>`;
+  }
+  // Premium popup
+  const contact = f.contact_info
+    ? `<div class="popup-contact">📞 ${esc(f.contact_info)}</div>`
+    : '';
+  let slots = '';
+  if (f.total_slots > 0) {
+    const free = f.total_slots - f.occupied_slots;
+    if (free > 0) {
+      slots = `<div class="popup-free">✅ ${free} vrije plek${free !== 1 ? 'ken' : ''}</div>`;
+    } else {
+      slots = `<div class="popup-full">⛔ Momenteel vol (${f.total_slots} plaatsen)</div>`;
+    }
+  }
+  const ad = f.ad_text
+    ? `<div class="popup-ad" onclick="this.classList.toggle('expanded')">
+        <div class="popup-ad-label">📢 Aanbieding</div>
+        ${esc(f.ad_text)}
+      </div>`
+    : '';
+  return `<div class="popup-inner">
+    <div class="popup-premium-badge">⭐ PREMIUM PARTNER</div>
+    <div class="popup-name">${esc(f.name)}</div>
+    <div class="popup-cat">${cat}${city}</div>
+    ${contact}${slots}${ad}
+  </div>`;
+}
+
+/* ── RENDER MARKERS ── */
+function renderMarkers(firms) {
+  cluster.clearLayers();
+  firms.forEach(f => {
+    if (!f.lat || !f.lng) return;
+    const marker = L.marker([f.lat, f.lng], {
+      icon: makeIcon(f.is_premium, f.category),
+      isPremium: !!f.is_premium
+    });
+    marker.bindPopup(buildPopup(f), {maxWidth: 260});
+    cluster.addLayer(marker);
+  });
+}
+
+/* ── LOAD FIRMS ── */
+async function loadFirms(cat) {
+  activeFilter = cat;
+  const url = cat ? `/api/firms?category=${cat}&limit=2000` : '/api/firms?limit=2000';
+  try {
+    const firms = await fetch(url).then(r => r.json());
+    allFirms = firms;
+    renderMarkers(firms);
+  } catch(e) { console.error('loadFirms error', e); }
+}
+
+/* ── FILTER ── */
+function filterMap(cat) {
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.style.outline='none');
+  const ids = {null:'t-all','thuiszorg':'t-tz','verzorgingshuis':'t-bh'};
+  const el = document.getElementById(ids[cat]);
+  if (el) el.style.outline = '2px solid var(--gold)';
+  loadFirms(cat);
+}
+
+/* ── STATS + ADS ── */
+async function loadStats() {
+  try {
+    const s = await fetch('/api/firms/stats').then(r => r.json());
+    document.getElementById('cnt-tz').textContent = s.thuiszorg.toLocaleString();
+    document.getElementById('cnt-bh').textContent = s.verzorgingshuis.toLocaleString();
+    document.getElementById('cnt-pm').textContent = s.premium.toLocaleString();
+    document.getElementById('stats-header').textContent = `${s.total.toLocaleString()} aanbieders`;
+  } catch(e) {}
+  loadAds();
+}
+
+async function loadAds() {
+  try {
+    const firms = await fetch('/api/firms?premium_only=true&limit=50').then(r => r.json());
+    const inner = document.getElementById('ads-inner');
+    if (!firms.length) { inner.innerHTML = '<div style="padding:16px;color:#444;font-size:11px;text-align:center">Geen premium partners</div>'; return; }
+    const html = firms.map(f => {
+      const free = f.total_slots > 0 ? f.total_slots - f.occupied_slots : null;
+      const slotsHtml = free !== null ? `<div style="font-size:10px;color:${free>0?'#22c55e':'#ef4444'};margin-top:4px">${free>0?`✅ ${free} vrij`:'⛔ Vol'}</div>` : '';
+      return `<div class="ad-card" onclick="flyTo(${f.lat},${f.lng})" title="${esc(f.ad_text||'')}">
+        <div class="tag">${f.category}</div>
+        <strong>${esc(f.name)}</strong>
+        ${f.city ? `<div style="font-size:10px;color:#888;margin-top:3px">${f.city}</div>` : ''}
+        ${slotsHtml}
+        ${f.ad_text ? `<div class="ad-text-preview" style="font-size:9px;color:#666;margin-top:5px;line-height:1.3;overflow:hidden;max-height:0;transition:max-height .3s">${esc(f.ad_text)}</div>` : ''}
+      </div>`;
+    }).join('');
+    inner.innerHTML = html + html; // duplicate for infinite scroll
+    // hover expand ad text
+    inner.querySelectorAll('.ad-card').forEach(card => {
+      const txt = card.querySelector('.ad-text-preview');
+      if (!txt) return;
+      card.addEventListener('mouseenter', () => txt.style.maxHeight = '80px');
+      card.addEventListener('mouseleave', () => txt.style.maxHeight = '0');
+    });
+  } catch(e) {}
+}
+
+function flyTo(lat, lng) { map.setView([lat, lng], 15, {animate:true, duration:1.2}); }
+
+/* ── IP GEOLOCATION ── */
+(async () => {
+  try {
+    // Try browser geolocation first (more accurate)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => map.setView([pos.coords.latitude, pos.coords.longitude], 12, {animate:true}),
+        async () => {
+          // Fallback to IP geolocation
+          const d = await fetch('https://ipapi.co/json/').then(r=>r.json());
+          if (d.latitude) map.setView([d.latitude, d.longitude], 11, {animate:true});
+        },
+        {timeout:5000}
+      );
+    } else {
+      const d = await fetch('https://ipapi.co/json/').then(r=>r.json());
+      if (d.latitude) map.setView([d.latitude, d.longitude], 11, {animate:true});
+    }
+  } catch(e) {}
+})();
+
+/* ── SEARCH ── */
+let st;
+function onSearch(q) {
+  clearTimeout(st);
+  const box = document.getElementById('search-results');
+  if (!q || q.length < 2) { box.innerHTML=''; return; }
+  st = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/firms/search?q=${encodeURIComponent(q)}`).then(r=>r.json());
+      if (!res.length) { box.innerHTML='<div class="search-item" style="color:#666">Geen resultaten</div>'; return; }
+      box.innerHTML = res.map(f =>
+        `<div class="search-item" onclick="flyTo(${f.lat},${f.lng});closeSearch()">
+          <div>${f.is_premium?'⭐ ':''}<strong>${esc(f.name)}</strong></div>
+          <div class="city">${f.category}${f.city?' · '+f.city:''}</div>
+        </div>`
+      ).join('');
+    } catch(e) {}
+  }, 300);
+}
+function closeSearch() { document.getElementById('search-results').innerHTML=''; document.getElementById('search-input').value=''; }
+document.addEventListener('click', e => { if (!e.target.closest('.search-box')) closeSearch(); });
+
+/* ── STRIPE PAYMENT ── */
+async function startPay() {
+  if (!stripe) { showToast('Stripe niet beschikbaar.'); return; }
+  const me = await fetch('/api/me').then(r=>r.json());
+  if (!me.logged_in) { window.location.href='/login'; return; }
+  try {
+    const r = await fetch('/api/create-checkout-session', {method:'POST', headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    if (d.id) stripe.redirectToCheckout({sessionId: d.id});
+    else showToast(d.detail||'Betaalfout');
+  } catch(e) { showToast('Betalingsfout'); }
+}
+
+/* ── AI CHAT ── */
+function toggleAI() {
+  const w = document.getElementById('ai-window');
+  w.style.display = w.style.display === 'flex' ? 'none' : 'flex';
+}
+
+async function sendAI() {
+  const inp = document.getElementById('ai-input');
+  const msg = inp.value.trim(); if (!msg) return;
+  const box = document.getElementById('ai-messages');
+  box.innerHTML += `<div class="msg-user">${esc(msg)}</div>`;
+  inp.value = '';
+  const typing = document.createElement('div');
+  typing.className = 'msg-typing'; typing.textContent = 'Aan het typen...';
+  box.appendChild(typing); box.scrollTop = box.scrollHeight;
+
+  // Build rich map context for AI
+  const b = map.getBounds();
+  const center = b.getCenter();
+  const visibleFirms = allFirms.filter(f =>
+    f.lat && f.lng && b.contains([f.lat, f.lng])
+  ).slice(0, 10).map(f => `${f.name} (${f.category}${f.city?', '+f.city:''}${f.is_premium?' ⭐':''})`).join('; ');
+  const ctx = `Kaartcentrum: ${center.lat.toFixed(3)},${center.lng.toFixed(3)} | Zoom: ${map.getZoom()} | Filter: ${activeFilter||'alles'} | Zichtbare aanbieders: ${visibleFirms||'geen'}`;
+
+  try {
+    const r = await fetch('/api/ai-assistant', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg, context: ctx})
+    });
+    const d = await r.json();
+    typing.remove();
+    box.innerHTML += `<div class="msg-ai">${esc(d.reply||'Geen antwoord')}</div>`;
+  } catch(e) {
+    typing.remove();
+    box.innerHTML += `<div class="msg-ai">Verbindingsfout.</div>`;
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ── HELPERS ── */
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToast(m, ms=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.style.display = 'block';
+  setTimeout(() => t.style.display='none', ms);
+}
+
+/* ── I18N ── */
+const T = {
+  nl:{login:'PARTNER LOG-IN',all:'ALLE ZORGAANBIEDERS',tz:'THUISZORG',bh:'VERZORGINGSHUIZEN',filter:'Filter categorie',premium:'⭐ UPGRADE PREMIUM (€150)',topup:'PARTNER AANMELDEN',aiph:'Uw vraag...'},
+  en:{login:'PARTNER LOGIN',all:'ALL CARE PROVIDERS',tz:'HOME CARE',bh:'NURSING HOMES',filter:'Filter category',premium:'⭐ UPGRADE PREMIUM (€150)',topup:'REGISTER AS PARTNER',aiph:'Your question...'},
+  pl:{login:'LOGOWANIE PARTNERA',all:'WSZYSCY DOSTAWCY',tz:'OPIEKA DOMOWA',bh:'DOMY OPIEKI',filter:'Filtr',premium:'⭐ KONTO PREMIUM (€150)',topup:'ZAREJESTRUJ FIRMĘ',aiph:'Twoje pytanie...'},
+  de:{login:'PARTNER-LOGIN',all:'ALLE ANBIETER',tz:'HAUSPFLEGE',bh:'PFLEGEHEIME',filter:'Kategorie filtern',premium:'⭐ PREMIUM (€150)',topup:'PARTNER ANMELDEN',aiph:'Ihre Frage...'},
+};
+function setLang(l) {
+  document.querySelectorAll('.lang-btns button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('l-'+l).classList.add('active');
+  const t = T[l]||T.nl;
+  document.getElementById('t-login').textContent = t.login;
+  document.getElementById('t-all').textContent = t.all;
+  document.getElementById('t-tz').textContent = t.tz;
+  document.getElementById('t-bh').textContent = t.bh;
+  document.getElementById('t-filter-label').textContent = t.filter;
+  document.getElementById('t-premium').textContent = t.premium;
+  document.getElementById('t-topup').textContent = t.topup;
+  document.getElementById('ai-input').placeholder = t.aiph;
+}
+
+/* ── PREMIUM AUTO-MONITOR ── */
+// Refresh markers every 5 minutes to pick up premium status changes
+setInterval(() => loadFirms(activeFilter), 5 * 60 * 1000);
+
+/* ── INIT ── */
+loadFirms(null);
+loadStats();
+</script>
 </body>
 </html>

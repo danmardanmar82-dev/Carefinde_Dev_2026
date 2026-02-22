@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carefinder NL – Partner Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#fff;min-height:100vh}
+header{background:#111;border-bottom:3px solid #ffd700;padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:18px;font-weight:900;letter-spacing:2px;color:#ffd700}.logo span{color:#fff}
+.header-right{display:flex;align-items:center;gap:12px}
+.user-name{color:#888;font-size:14px}
+.btn-map{border:1px solid #ffd700;color:#ffd700;padding:6px 14px;text-decoration:none;border-radius:5px;font-size:13px;font-weight:700}
+.btn-logout{background:#ef4444;color:#fff;padding:8px 18px;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer}
+.container{max-width:800px;margin:32px auto;padding:0 20px}
+.status-banner{padding:14px 20px;border-radius:10px;margin-bottom:24px;font-weight:700;font-size:15px;text-align:center}
+.status-free{background:rgba(107,114,128,.15);border:1px solid #374151;color:#9ca3af}
+.status-premium{background:rgba(255,215,0,.15);border:1px solid #ffd700;color:#ffd700}
+.card{background:#111;border:1px solid #222;border-radius:12px;padding:24px;margin-bottom:20px}
+.card h3{font-size:16px;font-weight:700;margin-bottom:4px;color:#ffd700}
+.card .desc{font-size:12px;color:#555;margin-bottom:16px}
+label{font-size:12px;color:#666;display:block;margin-bottom:5px;margin-top:14px;text-transform:uppercase;letter-spacing:.5px}
+input,select{width:100%;padding:10px 13px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:7px;font-size:13px;outline:none}
+input:focus,select:focus{border-color:#ffd700}
+select option{background:#1a1a1a}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{padding:11px 20px;border:none;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;text-transform:uppercase;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-gold{background:#ffd700;color:#000}
+.btn-blue{background:#1a6cff;color:#fff}
+.btn-outline{background:transparent;border:1px solid #ffd700;color:#ffd700;padding:8px 14px;font-size:12px;border-radius:7px;cursor:pointer;font-weight:700}
+.msg{margin-top:12px;padding:10px 14px;border-radius:7px;font-size:13px;display:none}
+.msg.ok{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid #22c55e}
+.msg.err{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid #ef4444}
+.feature-list{list-style:none;margin-top:10px}
+.feature-list li{padding:6px 0;font-size:13px;border-bottom:1px solid #1a1a1a;color:#aaa}
+.feature-list li::before{content:'✓ ';color:#22c55e;font-weight:700}
+.feature-list li.locked{color:#444}
+.feature-list li.locked::before{content:'🔒 '}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CARE<span>FINDER</span> NL</div>
+  <div class="header-right">
+    <span class="user-name" id="user-name">Partner</span>
+    <a href="/" class="btn-map">🗺 Kaart</a>
+    <button class="btn-logout" onclick="window.location.href='/logout'">Uitloggen</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="success-banner" style="display:none;background:rgba(34,197,94,.15);border:1px solid #22c55e;border-radius:10px;padding:14px;margin-bottom:20px;color:#22c55e;font-weight:700;text-align:center">
+    ✅ Betaling geslaagd! Uw Premium account is geactiveerd.
+  </div>
+
+  <div class="status-banner status-free" id="status-banner">
+    STATUS: GRATIS ACCOUNT
+  </div>
+
+  <div class="card">
+    <h3>Bedrijfsgegevens</h3>
+    <div class="desc">Vul uw gegevens in om zichtbaar te zijn op de kaart van Nederland.</div>
+
+    <label>Bedrijfsnaam</label>
+    <input type="text" id="firm-name" placeholder="Bijv. Buurtzorg Amsterdam">
+
+    <label>Categorie</label>
+    <select id="firm-cat">
+      <option value="thuiszorg">Thuiszorg / Wijkverpleging</option>
+      <option value="verzorgingshuis">Verzorgings- / Verpleeghuis</option>
+    </select>
+
+    <div class="row2">
+      <div>
+        <label>Latitude</label>
+        <input type="number" id="firm-lat" step="0.0001" placeholder="bijv. 52.3676">
+      </div>
+      <div>
+        <label>Longitude</label>
+        <input type="number" id="firm-lng" step="0.0001" placeholder="bijv. 4.9041">
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn-outline" onclick="getMyLocation()">📍 Gebruik mijn locatie</button>
+    </div>
+
+    <label>Contactgegevens <span style="color:#555;font-size:11px">(zichtbaar bij Premium)</span></label>
+    <input type="text" id="firm-contact" placeholder="Telefoon, website, e-mail...">
+
+    <div class="row2">
+      <div><label>Totaal plaatsen</label><input type="number" id="firm-slots" value="0" min="0"></div>
+      <div><label>Bezette plaatsen</label><input type="number" id="firm-occupied" value="0" min="0"></div>
+    </div>
+
+    <label>Advertentietekst <span style="color:#555;font-size:11px">(Premium — zichtbaar in popup bij hover)</span></label>
+    <textarea id="firm-ad" rows="3" style="width:100%;padding:10px 13px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:7px;font-size:13px;outline:none;resize:vertical" placeholder="Bijv.: Wij bieden persoonlijke thuiszorg in Amsterdam en omgeving. Bel ons voor een gratis intake."></textarea>
+
+    <div style="margin-top:18px">
+      <button class="btn btn-gold" onclick="saveFirm()">💾 OPSLAAN</button>
+    </div>
+    <div class="msg" id="save-msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>⭐ Premium Account</h3>
+    <div class="desc">Vergroot uw zichtbaarheid op de kaart van heel Nederland</div>
+    <ul class="feature-list">
+      <li>Gouden markering op de kaart</li>
+      <li>Contactgegevens zichtbaar voor gebruikers</li>
+      <li>Advertentie in Premium Partners sidebar</li>
+      <li>Prioriteit in zoekresultaten</li>
+      <li class="locked">Uitgebreide statistieken (binnenkort)</li>
+    </ul>
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="startPay('premium')" id="btn-premium">⭐ PREMIUM — €150/maand</button>
+      <button class="btn btn-blue" onclick="startPay('topup')">TOP-UP — €50</button>
+    </div>
+    <div class="msg" id="pay-msg"></div>
+  </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+if(window.location.search.includes('success=true')){
+  document.getElementById('success-banner').style.display='block';
+}
+
+async function loadInfo(){
+  const r=await fetch('/api/partner/firm');
+  if(r.status===403){window.location.href='/login';return;}
+  const d=await r.json();
+  if(d.username) document.getElementById('user-name').textContent=d.username;
+  if(d.name) document.getElementById('firm-name').value=d.name||'';
+  if(d.category) document.getElementById('firm-cat').value=d.category;
+  document.getElementById('firm-lat').value=d.lat||'';
+  document.getElementById('firm-lng').value=d.lng||'';
+  document.getElementById('firm-contact').value=d.contact_info||'';
+  document.getElementById('firm-slots').value=d.total_slots||0;
+  document.getElementById('firm-occupied').value=d.occupied_slots||0;
+  document.getElementById('firm-ad').value=d.ad_text||'';
+  if(d.is_premium){
+    const b=document.getElementById('status-banner');
+    b.className='status-banner status-premium';
+    b.textContent='⭐ PREMIUM ACCOUNT ACTIEF — Geldig tot: '+(d.premium_expiry||'–');
+    document.getElementById('btn-premium').disabled=true;
+    document.getElementById('btn-premium').style.opacity='.5';
+  }
+}
+
+async function saveFirm(){
+  const name=document.getElementById('firm-name').value.trim();
+  const cat=document.getElementById('firm-cat').value;
+  const lat=parseFloat(document.getElementById('firm-lat').value);
+  const lng=parseFloat(document.getElementById('firm-lng').value);
+  const contact=document.getElementById('firm-contact').value.trim();
+  const total_slots=parseInt(document.getElementById('firm-slots').value)||0;
+  const occupied_slots=parseInt(document.getElementById('firm-occupied').value)||0;
+  const ad_text=document.getElementById('firm-ad').value.trim();
+  if(!name||isNaN(lat)||isNaN(lng)){showMsg('save-msg','err','Naam en coördinaten zijn verplicht.');return;}
+  if(lat<50||lat>54||lng<3||lng>8){showMsg('save-msg','err','Coördinaten buiten Nederland.');return;}
+  const r=await fetch('/api/partner/update',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,cat,lat,lng,contact,total_slots,occupied_slots,ad_text})});
+  if(r.ok) showMsg('save-msg','ok','✅ Bedrijfsgegevens opgeslagen!');
+  else showMsg('save-msg','err','Fout bij opslaan.');
+}
+
+async function startPay(action){
+  try{
+    const cfg=await fetch('/api/config').then(r=>r.json());
+    if(!cfg.stripe_pk){showMsg('pay-msg','err','Stripe niet geconfigureerd.');return;}
+    const st=Stripe(cfg.stripe_pk);
+    const r=await fetch('/api/create-checkout-session',{method:'POST',headers:{'Content-Type':'application/json'}});
+    const d=await r.json();
+    if(d.id) st.redirectToCheckout({sessionId:d.id});
+    else showMsg('pay-msg','err',d.detail||'Betalingsfout.');
+  }catch(e){showMsg('pay-msg','err','Verbindingsfout.');}
+}
+
+function getMyLocation(){
+  if(!navigator.geolocation){alert('Geolocation niet ondersteund.');return;}
+  navigator.geolocation.getCurrentPosition(p=>{
+    document.getElementById('firm-lat').value=p.coords.latitude.toFixed(6);
+    document.getElementById('firm-lng').value=p.coords.longitude.toFixed(6);
+  });
+}
+
+function showMsg(id,type,text){
+  const el=document.getElementById(id);
+  el.className='msg '+type;el.textContent=text;el.style.display='block';
+  if(type==='ok') setTimeout(()=>el.style.display='none',4000);
+}
+
+loadInfo();
+</script>
+<footer style="text-align:center;padding:16px;font-size:11px;color:#999;border-top:1px solid #f0f0f0;margin-top:32px;">
+  &copy; 2026 Carefinder NL &mdash; DanmarImport &amp; Daniel Buszydlo &nbsp;|&nbsp;
+  <a href="/algemene-voorwaarden" target="_blank" style="color:#aaa;text-decoration:none;">Algemene Voorwaarden</a>
+</footer>
+</body>
+</html>

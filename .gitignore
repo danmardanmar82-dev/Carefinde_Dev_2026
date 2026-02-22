@@ -17,3 +17,10 @@ ENV/
 
 # OS
 .DS_Store
+
+# Database — nie wgrywaj lokalnej bazy na serwer
+carefinder.db
+*.db
+
+# Temp
+/tmp/

@@ -1,7 +1,7 @@
 [project]
-name = "data-app"
-version = "0.1.0"
-description = "Data App"
+name = "carefinder-nl"
+version = "1.0.0"
+description = "Carefinder NL – Platform voor thuiszorg en verzorgingshuizen in Nederland"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,4 +10,11 @@ dependencies = [
     "httpx>=0.27",
     "jinja2>=3.1",
     "watchfiles>=1.0",
+    "openai>=1.30",
+    "stripe>=9.0",
+    "pydantic>=2.0",
+    "itsdangerous>=2.2.0",
+    "python-multipart>=0.0.22",
+    "google-genai>=1.64.0",
+    "psycopg2-binary>=2.9",
 ]

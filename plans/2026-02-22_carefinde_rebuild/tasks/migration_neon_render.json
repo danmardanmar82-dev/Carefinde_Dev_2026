@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "content": "Przeanalizować routes.py — schemat SQLite, wszystkie zapytania SQL",
+    "status": "completed"
+  },
+  {
+    "id": "2",
+    "content": "Założyć Neon DB i pobrać DATABASE_URL (użytkownik)",
+    "status": "pending"
+  },
+  {
+    "id": "3",
+    "content": "Zaktualizować pyproject.toml — dodać psycopg2-binary, sqlalchemy",
+    "status": "in_progress"
+  },
+  {
+    "id": "4",
+    "content": "Zmigrować routes.py — SQLite → PostgreSQL (składnia, get_db, ensure_tables)",
+    "status": "pending"
+  },
+  {
+    "id": "5",
+    "content": "Przygotować render.yaml i .gitignore do deploymentu na Render",
+    "status": "pending"
+  },
+  {
+    "id": "6",
+    "content": "Przetestować lokalnie z Neon DB URL, zweryfikować health endpoint",
+    "status": "pending"
+  }
+]

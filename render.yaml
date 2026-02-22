@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: carefinder-nl
+    runtime: python
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: NEON_DATABASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: GEMINI_GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false

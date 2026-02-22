@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "content": "Napraw ładowanie pinezek: sprawdź /api/firms response + dodaj auto-lokalizację po IP",
+    "status": "completed"
+  },
+  {
+    "id": "2",
+    "content": "Premium monitoring: cron-style check premium_expiry przy każdym /api/firms, złote/niebieskie pinezki z rozbudowanym popupem",
+    "status": "completed"
+  },
+  {
+    "id": "3",
+    "content": "Rozbudowane popup okna: premium = pełne dane + wolne miejsca + reklama hover-expand, normal = tylko nazwa",
+    "status": "completed"
+  },
+  {
+    "id": "4",
+    "content": "Partner dashboard: pola wolnych miejsc + reklama tekstowa do edycji",
+    "status": "completed"
+  },
+  {
+    "id": "5",
+    "content": "AI context z mapą: przekaż do AI aktualny widok mapy + widoczne firmy",
+    "status": "completed"
+  },
+  {
+    "id": "6",
+    "content": "Test end-to-end: klastry, pinezki, lokalizacja, premium flow",
+    "status": "completed"
+  }
+]

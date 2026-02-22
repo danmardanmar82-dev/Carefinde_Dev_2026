@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carefinder NL – Inloggen</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.card{background:#111;border:1px solid #222;border-radius:14px;padding:36px 40px;width:100%;max-width:420px}
+.logo{font-size:22px;font-weight:900;letter-spacing:2px;color:#ffd700;text-align:center;margin-bottom:6px}
+.logo span{color:#fff}
+.subtitle{color:#555;font-size:13px;text-align:center;margin-bottom:28px}
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:#1a1a1a;border-radius:8px;padding:4px}
+.tab{flex:1;padding:9px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;background:transparent;color:#666;transition:all .2s}
+.tab.active{background:#ffd700;color:#000}
+label{font-size:12px;color:#666;display:block;margin-bottom:5px;margin-top:14px;text-transform:uppercase;letter-spacing:.5px}
+input{width:100%;padding:11px 14px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+input:focus{border-color:#ffd700}
+.btn{width:100%;padding:13px;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-top:20px;text-transform:uppercase;letter-spacing:1px;transition:opacity .2s}
+.btn-submit{background:#ffd700;color:#000}
+.btn-submit:hover{opacity:.9}
+.msg{margin-top:14px;padding:10px 14px;border-radius:7px;font-size:13px;text-align:center;display:none}
+.msg.ok{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid #22c55e}
+.msg.err{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid #ef4444}
+.back-link{margin-top:20px;text-align:center;font-size:13px;color:#555}
+.back-link a{color:#ffd700;text-decoration:none}
+.back-link a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">CARE<span>FINDER</span> NL</div>
+  <div class="subtitle">Partner Portaal</div>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('login')" id="tab-login">Inloggen</button>
+    <button class="tab" onclick="switchTab('register')" id="tab-reg">Registreren</button>
+  </div>
+
+  <!-- Login form -->
+  <div id="form-login">
+    <label for="l-user">Gebruikersnaam</label>
+    <input type="text" id="l-user" placeholder="Gebruikersnaam" autocomplete="username">
+    <label for="l-pass">Wachtwoord</label>
+    <input type="password" id="l-pass" placeholder="Wachtwoord" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-submit" onclick="doLogin()">INLOGGEN</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+
+  <!-- Register form -->
+  <div id="form-register" style="display:none">
+    <label for="r-user">Gebruikersnaam (min. 3 tekens)</label>
+    <input type="text" id="r-user" placeholder="Bedrijfsnaam of naam">
+    <label for="r-pass">Wachtwoord (min. 6 tekens)</label>
+    <input type="password" id="r-pass" placeholder="Wachtwoord">
+    <label for="r-pass2">Wachtwoord herhalen</label>
+    <input type="password" id="r-pass2" placeholder="Wachtwoord herhalen" onkeydown="if(event.key==='Enter')doRegister()">
+    <button class="btn btn-submit" onclick="doRegister()">ACCOUNT AANMAKEN</button>
+    <div class="msg" id="register-msg"></div>
+  </div>
+
+  <div class="back-link"><a href="/">← Terug naar de kaart</a></div>
+</div>
+
+<script>
+function switchTab(t){
+  document.getElementById('tab-login').classList.toggle('active', t==='login');
+  document.getElementById('tab-reg').classList.toggle('active', t==='register');
+  document.getElementById('form-login').style.display = t==='login'?'block':'none';
+  document.getElementById('form-register').style.display = t==='register'?'block':'none';
+}
+
+function showMsg(id, type, text){
+  const el = document.getElementById(id);
+  el.className = 'msg ' + type;
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+async function doLogin(){
+  const u = document.getElementById('l-user').value.trim();
+  const p = document.getElementById('l-pass').value;
+  if(!u||!p){showMsg('login-msg','err','Vul alle velden in.');return;}
+  try{
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d = await r.json();
+    if(r.ok){
+      showMsg('login-msg','ok','Ingelogd! Doorsturen...');
+      setTimeout(()=>window.location.href='/dashboard', 800);
+    } else {
+      showMsg('login-msg','err', d.detail||'Foutieve inloggegevens.');
+    }
+  }catch(e){showMsg('login-msg','err','Verbindingsfout.');}
+}
+
+async function doRegister(){
+  const u = document.getElementById('r-user').value.trim();
+  const p = document.getElementById('r-pass').value;
+  const p2 = document.getElementById('r-pass2').value;
+  if(!u||!p||!p2){showMsg('register-msg','err','Vul alle velden in.');return;}
+  if(p!==p2){showMsg('register-msg','err','Wachtwoorden komen niet overeen.');return;}
+  try{
+    const r = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d = await r.json();
+    if(r.ok){
+      showMsg('register-msg','ok','Account aangemaakt! Nu inloggen...');
+      setTimeout(()=>switchTab('login'), 1500);
+    } else {
+      showMsg('register-msg','err', d.detail||'Registratiefout.');
+    }
+  }catch(e){showMsg('register-msg','err','Verbindingsfout.');}
+}
+</script>
+<footer style="text-align:center;padding:16px;font-size:11px;color:#999;margin-top:24px;">
+  &copy; 2026 Carefinder NL &mdash; DanmarImport &amp; Daniel Buszydlo &nbsp;|&nbsp;
+  <a href="/algemene-voorwaarden" target="_blank" style="color:#888;text-decoration:none;">Algemene Voorwaarden</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "content": "Zbuduj bazę danych SQLite z 2000+ prawdziwymi firmami thuiszorg/verzorgingshuizen z Holandii",
+    "status": "completed"
+  },
+  {
+    "id": "2",
+    "content": "Przebuduj routes.py na FastAPI z loginiem/wylogowaniem (JWT cookie), AI endpoint (OpenAI), Stripe, firms API",
+    "status": "completed"
+  },
+  {
+    "id": "3",
+    "content": "Stwórz index.html - mapa Leaflet z filtrowaniem, AI chat, Stripe premium",
+    "status": "completed"
+  },
+  {
+    "id": "4",
+    "content": "Stwórz login.html - formularz logowania/rejestracji",
+    "status": "completed"
+  },
+  {
+    "id": "5",
+    "content": "Stwórz dashboard_admin.html i dashboard_partner.html z działającym wylogowaniem",
+    "status": "completed"
+  },
+  {
+    "id": "6",
+    "content": "Zaktualizuj pyproject.toml, uruchom aplikację i zweryfikuj działanie",
+    "status": "completed"
+  }
+]

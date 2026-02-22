@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Algemene Voorwaarden – Carefinder NL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:       #1a1a2e;
+      --ink-light: #3d3d5c;
+      --rule:      #c8a96e;
+      --rule-light:#e8d5a3;
+      --bg:        #faf9f6;
+      --bg-warm:   #f3efe6;
+      --accent:    #0a4f6e;
+      --red:       #8b1a1a;
+      --white:     #ffffff;
+      --shadow:    0 4px 24px rgba(26,26,46,.08);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Source Serif 4', Georgia, serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      background: var(--ink);
+      padding: 14px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,.25);
+    }
+    .topbar-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--rule);
+      letter-spacing: .03em;
+      text-decoration: none;
+    }
+    .topbar-logo span { color: var(--white); }
+    .topbar-back {
+      font-family: 'Source Serif 4', serif;
+      font-size: .85rem;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s;
+    }
+    .topbar-back:hover { color: var(--rule); }
+    .topbar-back svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--ink);
+      color: var(--white);
+      padding: 72px 40px 56px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 39px,
+        rgba(200,169,110,.07) 39px,
+        rgba(200,169,110,.07) 40px
+      );
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--rule);
+      border: 1px solid rgba(200,169,110,.4);
+      padding: 5px 16px;
+      border-radius: 2px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -.01em;
+      position: relative;
+      max-width: 700px;
+      margin: 0 auto 20px;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--rule);
+    }
+    .hero-sub {
+      font-size: .95rem;
+      color: rgba(255,255,255,.55);
+      font-weight: 300;
+      position: relative;
+      max-width: 500px;
+      margin: 0 auto;
+      font-style: italic;
+    }
+    .hero-rule {
+      width: 60px;
+      height: 2px;
+      background: var(--rule);
+      margin: 28px auto 0;
+      position: relative;
+    }
+
+    /* ── LAYOUT ── */
+    .page-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ── META INFO ── */
+    .meta-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 32px;
+      background: var(--bg-warm);
+      border-left: 4px solid var(--rule);
+      margin: 40px 0 48px;
+      font-size: .82rem;
+      color: var(--ink-light);
+      font-style: italic;
+    }
+    .meta-bar strong { font-style: normal; color: var(--ink); font-weight: 600; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--white);
+      border: 1px solid var(--rule-light);
+      border-radius: 4px;
+      padding: 28px 32px;
+      margin-bottom: 52px;
+      box-shadow: var(--shadow);
+    }
+    .toc-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: .8rem;
+    }
+    .toc ol {
+      list-style: none;
+      columns: 2;
+      column-gap: 32px;
+    }
+    .toc ol li {
+      break-inside: avoid;
+      margin-bottom: 6px;
+    }
+    .toc ol li a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: .88rem;
+      font-weight: 300;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      transition: color .2s;
+    }
+    .toc ol li a:hover { color: var(--rule); }
+    .toc ol li a .num {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: .75rem;
+      color: var(--rule);
+      min-width: 20px;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 52px;
+      scroll-margin-top: 80px;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--rule-light);
+    }
+    .section-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--rule);
+      line-height: 1;
+      min-width: 32px;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .section p {
+      color: var(--ink-light);
+      margin-bottom: 14px;
+      font-size: .97rem;
+    }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── HIGHLIGHT BOXES ── */
+    .box {
+      border-radius: 3px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      font-size: .93rem;
+    }
+    .box-price {
+      background: linear-gradient(135deg, #eaf4fb 0%, #d6eef8 100%);
+      border-left: 4px solid var(--accent);
+    }
+    .box-price .price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .box-price .price-row:last-child { margin-bottom: 0; }
+    .box-price .label { color: var(--ink); font-weight: 400; }
+    .box-price .amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .box-warning {
+      background: linear-gradient(135deg, #fdf2f2 0%, #fce8e8 100%);
+      border-left: 4px solid var(--red);
+    }
+    .box-warning .penalty-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--red);
+      display: block;
+      margin: 8px 0 4px;
+    }
+    .box-warning p { color: #5a1a1a; }
+    .box-info {
+      background: var(--bg-warm);
+      border-left: 4px solid var(--rule);
+    }
+    .box-info p { color: var(--ink-light); }
+
+    /* ── COMPANY CARD ── */
+    .company-card {
+      background: var(--white);
+      border: 1px solid var(--rule-light);
+      border-radius: 4px;
+      padding: 28px 32px;
+      box-shadow: var(--shadow);
+      margin: 24px 0;
+    }
+    .company-card .company-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .company-card .company-owner {
+      font-size: .9rem;
+      color: var(--rule);
+      font-style: italic;
+      margin-bottom: 16px;
+      font-weight: 300;
+    }
+    .company-card table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+    .company-card td {
+      padding: 6px 0;
+      vertical-align: top;
+    }
+    .company-card td:first-child {
+      color: var(--ink-light);
+      width: 140px;
+      font-weight: 300;
+    }
+    .company-card td:last-child { color: var(--ink); font-weight: 400; }
+
+    /* ── SIGNATURE BLOCK ── */
+    .signature-block {
+      margin-top: 60px;
+      padding: 32px;
+      background: var(--ink);
+      color: var(--white);
+      border-radius: 4px;
+      text-align: center;
+    }
+    .signature-block p { color: rgba(255,255,255,.6); font-size: .85rem; margin-bottom: 8px; }
+    .signature-block .sig-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--rule);
+      margin: 12px 0 4px;
+    }
+    .signature-block .sig-company {
+      font-size: .9rem;
+      color: rgba(255,255,255,.5);
+      font-style: italic;
+    }
+    .signature-block .sig-date {
+      margin-top: 16px;
+      font-size: .78rem;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg-warm);
+      border-top: 1px solid var(--rule-light);
+      text-align: center;
+      padding: 24px;
+      font-size: .78rem;
+      color: var(--ink-light);
+      font-style: italic;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .topbar { padding: 14px 20px; }
+      .hero { padding: 52px 20px 40px; }
+      .page-wrap { padding: 0 16px 60px; }
+      .toc ol { columns: 1; }
+      .meta-bar { flex-direction: column; gap: 8px; }
+      .company-card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <a href="/" class="topbar-logo"><span>Carefinder</span> NL</a>
+  <a href="/" class="topbar-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Terug naar de kaart
+  </a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Juridisch document</div>
+  <h1>Algemene<br><em>Voorwaarden</em></h1>
+  <p class="hero-sub">Carefinder NL — Zorgplatform voor thuiszorg &amp; verzorgingshuizen in Nederland</p>
+  <div class="hero-rule"></div>
+</section>
+
+<!-- MAIN CONTENT -->
+<div class="page-wrap">
+
+  <!-- META -->
+  <div class="meta-bar">
+    <div><strong>Versie:</strong> 1.0 &nbsp;|&nbsp; <strong>Datum:</strong> Februari 2026</div>
+    <div><strong>Eigenaar:</strong> Daniel Buszydlo &nbsp;|&nbsp; DanmarImport</div>
+    <div><strong>Toepasselijk recht:</strong> Nederlands recht</div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Inhoudsopgave</div>
+    <ol>
+      <li><a href="#art1"><span class="num">1.</span> Definities en toepasselijkheid</a></li>
+      <li><a href="#art2"><span class="num">2.</span> Eigendom en intellectuele eigendomsrechten</a></li>
+      <li><a href="#art3"><span class="num">3.</span> Licentie en toegang tot het systeem</a></li>
+      <li><a href="#art4"><span class="num">4.</span> Abonnement en tarieven</a></li>
+      <li><a href="#art5"><span class="num">5.</span> Kosten per klik (Pay-per-Click)</a></li>
+      <li><a href="#art6"><span class="num">6.</span> Verbod op kopiëren en onrechtmatig gebruik</a></li>
+      <li><a href="#art7"><span class="num">7.</span> Aansprakelijkheid en schadevergoeding</a></li>
+      <li><a href="#art8"><span class="num">8.</span> Verplichtingen van de gebruiker</a></li>
+      <li><a href="#art9"><span class="num">9.</span> Privacy en gegevensbescherming</a></li>
+      <li><a href="#art10"><span class="num">10.</span> Opzegging en beëindiging</a></li>
+      <li><a href="#art11"><span class="num">11.</span> Toepasselijk recht en geschillen</a></li>
+      <li><a href="#art12"><span class="num">12.</span> Slotbepalingen</a></li>
+    </ol>
+  </div>
+
+  <!-- ART 1 -->
+  <div class="section" id="art1">
+    <div class="section-header">
+      <span class="section-num">1</span>
+      <h2 class="section-title">Definities en toepasselijkheid</h2>
+    </div>
+    <p><strong>1.1</strong> Deze Algemene Voorwaarden zijn van toepassing op alle overeenkomsten, diensten, producten en rechtshandelingen waarbij <strong>Carefinder NL</strong> betrokken is, evenals op iedere toegang tot of gebruik van het Carefinder NL-platform, de website, de applicatie en alle bijbehorende software.</p>
+    <p><strong>1.2</strong> In deze Algemene Voorwaarden wordt verstaan onder:</p>
+    <div class="box box-info">
+      <p><strong>"Platform"</strong> — het digitale zoekhulpplatform Carefinder NL, inclusief alle functionaliteiten, databases, kaarten, AI-assistentie, partnerdashboards en administratieve modules.</p>
+      <p><strong>"Aanbieder / Eigenaar"</strong> — Daniel Buszydlo, handelend onder de naam <em>DanmarImport</em>, gevestigd in Nederland, exclusief eigenaar en ontwikkelaar van het Platform.</p>
+      <p><strong>"Gebruiker"</strong> — iedere natuurlijke of rechtspersoon die toegang heeft tot of gebruik maakt van het Platform, inclusief bezoekers, partnerorganisaties en beheerders.</p>
+      <p><strong>"Partner"</strong> — een zorgaanbieder, thuiszorgorganisatie of verzorgingshuis dat een betaald partnerprofiel heeft op het Platform.</p>
+      <p><strong>"Overeenkomst"</strong> — de overeenkomst die tot stand komt bij aanvaarding van deze Algemene Voorwaarden en/of activering van een abonnement.</p>
+    </div>
+    <p><strong>1.3</strong> Door gebruik te maken van het Platform, het aanmaken van een account, of het activeren van een abonnement, aanvaardt de Gebruiker uitdrukkelijk en onvoorwaardelijk de toepasselijkheid van deze Algemene Voorwaarden.</p>
+    <p><strong>1.4</strong> Afwijkingen van deze Voorwaarden zijn uitsluitend geldig indien schriftelijk overeengekomen en ondertekend door de Aanbieder.</p>
+  </div>
+
+  <!-- ART 2 -->
+  <div class="section" id="art2">
+    <div class="section-header">
+      <span class="section-num">2</span>
+      <h2 class="section-title">Eigendom en intellectuele eigendomsrechten</h2>
+    </div>
+    <p><strong>2.1</strong> Het Platform Carefinder NL, inclusief alle onderliggende software, broncode, algoritmen, databases, datastructuren, gebruikersinterfaces, grafische elementen, teksten, AI-modellen, bedrijfslogica, merkuitingen en alle verdere onderdelen, zijn het exclusieve intellectuele eigendom van:</p>
+
+    <div class="company-card">
+      <div class="company-name">DanmarImport</div>
+      <div class="company-owner">Eigenaar &amp; directeur: Daniel Buszydlo</div>
+      <table>
+        <tr><td>Activiteiten</td><td>Ontwikkeling en exploitatie van digitale zorgplatforms</td></tr>
+        <tr><td>Platform</td><td>Carefinder NL — zoekhulp thuiszorg &amp; verzorgingshuizen</td></tr>
+        <tr><td>Rechtsgebied</td><td>Nederland</td></tr>
+        <tr><td>Toepasselijk recht</td><td>Burgerlijk Wetboek, Auteurswet, Databankenwet</td></tr>
+      </table>
+    </div>
+
+    <p><strong>2.2</strong> Alle intellectuele eigendomsrechten — waaronder doch niet uitsluitend auteursrechten, databankrechten, merkrechten, octrooirechten, handelsnaamrechten en knowhow — berusten volledig en ondeelbaar bij Daniel Buszydlo / DanmarImport.</p>
+    <p><strong>2.3</strong> Geen enkel gebruik van het Platform leidt tot overdracht van intellectuele eigendomsrechten aan Gebruiker. De Gebruiker verkrijgt uitsluitend een beperkt, niet-exclusief, niet-overdraagbaar gebruiksrecht conform artikel 3 van deze Voorwaarden.</p>
+    <p><strong>2.4</strong> De naam <em>"Carefinder NL"</em>, het logo, de huisstijl en alle bijbehorende merkuitingen zijn eigendom van DanmarImport en mogen niet worden gebruikt zonder uitdrukkelijke schriftelijke toestemming van de Aanbieder.</p>
+    <p><strong>2.5</strong> De structuur, opzet en inhoud van de database met zorgaanbieders zijn beschermd onder de Databankenwet. Ongeautoriseerde extractie, hergebruik of reproductie is verboden.</p>
+  </div>
+
+  <!-- ART 3 -->
+  <div class="section" id="art3">
+    <div class="section-header">
+      <span class="section-num">3</span>
+      <h2 class="section-title">Licentie en toegang tot het systeem</h2>
+    </div>
+    <p><strong>3.1</strong> De Aanbieder verleent de Partner een beperkte, niet-exclusieve, niet-overdraagbare licentie om het Platform te gebruiken uitsluitend voor de doeleinden zoals omschreven in de Overeenkomst.</p>
+    <p><strong>3.2</strong> Deze licentie is strikt persoonlijk en kan niet worden overgedragen, in sublicentie gegeven of op enige andere wijze worden verstrekt aan derden zonder voorafgaande schriftelijke toestemming van de Aanbieder.</p>
+    <p><strong>3.3</strong> De licentie is geldig zolang de Partner voldoet aan de betalingsverplichtingen en overige verplichtingen uit deze Voorwaarden.</p>
+    <p><strong>3.4</strong> Bij beëindiging van de Overeenkomst — om welke reden dan ook — vervalt de licentie onmiddellijk en dient de Partner ieder gebruik van het Platform te staken.</p>
+  </div>
+
+  <!-- ART 4 -->
+  <div class="section" id="art4">
+    <div class="section-header">
+      <span class="section-num">4</span>
+      <h2 class="section-title">Abonnement en tarieven</h2>
+    </div>
+    <p><strong>4.1</strong> Voor toegang tot het partnerprofiel en de premiumfunctionaliteiten van het Platform is een abonnement vereist. Het abonnement geeft toegang tot een gepromoveerd profiel, een verhoogde zichtbaarheid op de kaart en aanvullende leadgeneratiefuncties.</p>
+
+    <div class="box box-price">
+      <div class="price-row">
+        <span class="label">Premium partnerabonnement (30 dagen)</span>
+        <span class="amount">€ 150,00</span>
+      </div>
+      <div class="price-row">
+        <span class="label" style="font-size:.82rem;color:#555;">Incl. BTW, per verlengingsperiode van 30 dagen</span>
+        <span class="amount" style="font-size:.9rem;color:#555;"></span>
+      </div>
+    </div>
+
+    <p><strong>4.2</strong> Het abonnement wordt aangegaan voor een periode van 30 dagen en wordt automatisch verlengd tenzij de Partner uiterlijk 7 dagen vóór het einde van de lopende periode schriftelijk opzegt.</p>
+    <p><strong>4.3</strong> Betaling geschiedt via het betalingssysteem op het Platform (Stripe). Geaccepteerde betaalmethoden zijn bankpas, creditcard en iDEAL.</p>
+    <p><strong>4.4</strong> Bij niet-tijdige betaling is de Aanbieder gerechtigd de toegang tot het Platform per direct te blokkeren, zonder dat dit de betalingsverplichting van de Partner ongedaan maakt.</p>
+    <p><strong>4.5</strong> Reeds betaalde bedragen worden niet gerestitueerd, ook niet bij tussentijdse opzegging of beëindiging wegens wanprestatie van de Partner.</p>
+    <p><strong>4.6</strong> De Aanbieder behoudt het recht de tarieven te wijzigen. Tariefwijzigingen worden ten minste 30 dagen van tevoren via het Platform of per e-mail aangekondigd.</p>
+  </div>
+
+  <!-- ART 5 -->
+  <div class="section" id="art5">
+    <div class="section-header">
+      <span class="section-num">5</span>
+      <h2 class="section-title">Kosten per klik (Pay-per-Click)</h2>
+    </div>
+    <p><strong>5.1</strong> Naast het abonnement kan de Aanbieder een Pay-per-Click (PPC) tarief hanteren voor specifieke promotiefuncties, doorverwijzingen of leadgeneratie via het Platform.</p>
+
+    <div class="box box-price">
+      <div class="price-row">
+        <span class="label">Kosten per gekwalificeerde klik / doorverwijzing</span>
+        <span class="amount">€ 50,00</span>
+      </div>
+      <div class="price-row">
+        <span class="label" style="font-size:.82rem;color:#555;">Per doorverwijzing of gekwalificeerd leadcontact, incl. BTW</span>
+      </div>
+    </div>
+
+    <p><strong>5.2</strong> Een "gekwalificeerde klik" of "doorverwijzing" betreft een unieke bezoeker die via het Platform directe contactinformatie van de Partner opvraagt, een contactformulier invult, of op een wijze interageert die leidt tot een direct zakelijk contact.</p>
+    <p><strong>5.3</strong> De PPC-kosten worden maandelijks in rekening gebracht op basis van de geregistreerde klikken in de rapportageperiode. De Partner ontvangt een gespecificeerde factuur.</p>
+    <p><strong>5.4</strong> De Partner aanvaardt de klikregistratie van de Aanbieder als bindend bewijs, tenzij de Partner binnen 14 dagen na ontvangst van de factuur schriftelijk en gemotiveerd bezwaar maakt.</p>
+    <p><strong>5.5</strong> Bij geschil over de hoogte van de PPC-kosten geldt de registratie van de Aanbieder als uitgangspunt, behoudens bewijs van het tegendeel door de Partner.</p>
+  </div>
+
+  <!-- ART 6 -->
+  <div class="section" id="art6">
+    <div class="section-header">
+      <span class="section-num">6</span>
+      <h2 class="section-title">Verbod op kopiëren en onrechtmatig gebruik</h2>
+    </div>
+    <p><strong>6.1</strong> Het is uitdrukkelijk en op straffe van onmiddellijke juridische actie verboden om — direct of indirect, geheel of gedeeltelijk — het Platform, de broncode, de database, de algoritmen, de gebruikersinterface, de bedrijfslogica of enig ander onderdeel van het systeem te kopiëren, te reproduceren, na te bouwen, te decompileren, te reverse engineeren, te distribueren of op enige andere wijze te exploiteren.</p>
+    <p><strong>6.2</strong> Eveneens verboden zijn:</p>
+    <div class="box box-info">
+      <p>— Het aanmaken van afgeleide werken gebaseerd op het Platform of onderdelen daarvan.</p>
+      <p>— Het gebruik van geautomatiseerde middelen (scrapers, bots, crawlers) om data van het Platform te extraheren.</p>
+      <p>— Het doorverkopen, verhuren of in sublicentie geven van toegang tot het Platform aan derden.</p>
+      <p>— Het gebruik van de naam, het merk of de visuele identiteit van Carefinder NL zonder toestemming.</p>
+      <p>— Het aanmaken van een concurrerend platform op basis van kennis, data of technologie ontleend aan Carefinder NL.</p>
+    </div>
+    <p><strong>6.3</strong> Bij overtreding van enig bepaling uit dit artikel verbeurt de overtreder per overtreding een onmiddellijk opeisbare boete aan de Aanbieder:</p>
+
+    <div class="box box-warning">
+      <p style="font-weight:600;font-size:.95rem;">Boete bij onrechtmatig kopiëren of misbruik van het systeem</p>
+      <span class="penalty-amount">€ 50.000,–</span>
+      <p>Per overtreding, onmiddellijk opeisbaar, zonder dat ingebrekestelling vereist is. Onverminderd het recht van de Aanbieder op volledige schadevergoeding en winstafdracht.</p>
+    </div>
+
+    <p><strong>6.4</strong> De boete als bedoeld in artikel 6.3 doet geen afbreuk aan het recht van de Aanbieder om aanvullende schadevergoeding te vorderen indien de werkelijke schade de boete overstijgt.</p>
+    <p><strong>6.5</strong> De Aanbieder is gerechtigd bij iedere (vermoedelijke) overtreding onmiddellijk toegang te blokkeren, aangifte te doen bij de bevoegde autoriteiten en gerechtelijke maatregelen te treffen, waaronder een kort geding tot onmiddellijk staken van de overtreding.</p>
+  </div>
+
+  <!-- ART 7 -->
+  <div class="section" id="art7">
+    <div class="section-header">
+      <span class="section-num">7</span>
+      <h2 class="section-title">Aansprakelijkheid en schadevergoeding</h2>
+    </div>
+    <p><strong>7.1</strong> De Aanbieder is niet aansprakelijk voor schade die voortvloeit uit tijdelijke onbeschikbaarheid van het Platform, technische storingen, onjuiste of onvolledige gegevens van Partnerorganisaties, of beslissingen die Gebruikers nemen op basis van via het Platform verkregen informatie.</p>
+    <p><strong>7.2</strong> De Aanbieder is evenmin aansprakelijk voor indirecte schade, gevolgschade, gederfde winst, verlies van gegevens of reputatieschade.</p>
+    <p><strong>7.3</strong> De totale aansprakelijkheid van de Aanbieder — voor zover wettelijk toegestaan — is beperkt tot het bedrag dat de Partner in de drie maanden voorafgaand aan de schadeveroorzakende gebeurtenis aan de Aanbieder heeft betaald.</p>
+    <p><strong>7.4</strong> De Partner vrijwaart de Aanbieder van alle aanspraken van derden die verband houden met het gebruik van het Platform door de Partner of met de inhoud van het partnerprofiel.</p>
+  </div>
+
+  <!-- ART 8 -->
+  <div class="section" id="art8">
+    <div class="section-header">
+      <span class="section-num">8</span>
+      <h2 class="section-title">Verplichtingen van de gebruiker</h2>
+    </div>
+    <p><strong>8.1</strong> De Gebruiker is verplicht correcte, actuele en waarheidsgetrouwe informatie te verstrekken bij registratie en in het partnerprofiel.</p>
+    <p><strong>8.2</strong> De Partner draagt de volledige verantwoordelijkheid voor de juistheid van de in het profiel opgenomen gegevens, waaronder contactgegevens, tarieven, beschikbaarheid en kwaliteitscertificaten.</p>
+    <p><strong>8.3</strong> Het is de Gebruiker verboden het Platform te gebruiken voor onwettige doeleinden, misleidende communicatie, verspreiding van malware, of enige andere activiteit die de integriteit of werking van het Platform kan schaden.</p>
+    <p><strong>8.4</strong> De Gebruiker is verplicht inloggegevens vertrouwelijk te houden en mag deze niet delen met derden. Bij (vermoed) ongeautoriseerd gebruik dient de Gebruiker de Aanbieder onmiddellijk te informeren.</p>
+  </div>
+
+  <!-- ART 9 -->
+  <div class="section" id="art9">
+    <div class="section-header">
+      <span class="section-num">9</span>
+      <h2 class="section-title">Privacy en gegevensbescherming</h2>
+    </div>
+    <p><strong>9.1</strong> De Aanbieder verwerkt persoonsgegevens conform de Algemene Verordening Gegevensbescherming (AVG / GDPR) en de Nederlandse Uitvoeringswet AVG.</p>
+    <p><strong>9.2</strong> Door gebruik te maken van het Platform stemt de Gebruiker in met de verwerking van persoonsgegevens ten behoeve van de uitvoering van de Overeenkomst, klantenservice en — indien van toepassing — marketingcommunicatie.</p>
+    <p><strong>9.3</strong> Persoonsgegevens worden niet verkocht aan derden. Gegevens worden uitsluitend gedeeld met dienstverleners die betrokken zijn bij de uitvoering van de Overeenkomst (betalingsverwerking, hostingdiensten).</p>
+    <p><strong>9.4</strong> De Gebruiker heeft het recht op inzage, correctie, verwijdering en overdraagbaarheid van zijn persoonsgegevens. Verzoeken kunnen worden ingediend via het contactadres van de Aanbieder.</p>
+  </div>
+
+  <!-- ART 10 -->
+  <div class="section" id="art10">
+    <div class="section-header">
+      <span class="section-num">10</span>
+      <h2 class="section-title">Opzegging en beëindiging</h2>
+    </div>
+    <p><strong>10.1</strong> De Partner kan het abonnement opzeggen door uiterlijk 7 dagen vóór de verlengingsdatum schriftelijk of via het dashboard op te zeggen.</p>
+    <p><strong>10.2</strong> De Aanbieder is gerechtigd de Overeenkomst met onmiddellijke ingang en zonder rechterlijke tussenkomst te beëindigen indien de Partner:</p>
+    <div class="box box-info">
+      <p>— een bepaling van deze Algemene Voorwaarden overtreedt;</p>
+      <p>— nalatig is in de nakoming van betalingsverplichtingen;</p>
+      <p>— failliet wordt verklaard of surseance van betaling aanvraagt;</p>
+      <p>— het Platform gebruikt voor onwettige doeleinden of op een wijze die de reputatie van Carefinder NL schaadt.</p>
+    </div>
+    <p><strong>10.3</strong> Bij beëindiging wegens wanprestatie van de Partner behoudt de Aanbieder het recht op vergoeding van alle geleden schade, inclusief gederfde inkomsten over de resterende contractperiode.</p>
+  </div>
+
+  <!-- ART 11 -->
+  <div class="section" id="art11">
+    <div class="section-header">
+      <span class="section-num">11</span>
+      <h2 class="section-title">Toepasselijk recht en geschillen</h2>
+    </div>
+    <p><strong>11.1</strong> Op alle overeenkomsten en rechtsverhoudingen waarop deze Algemene Voorwaarden van toepassing zijn, is uitsluitend Nederlands recht van toepassing.</p>
+    <p><strong>11.2</strong> Geschillen die voortvloeien uit of verband houden met de Overeenkomst of deze Algemene Voorwaarden worden in eerste instantie beslecht door de bevoegde rechter in het arrondissement waar de Aanbieder is gevestigd.</p>
+    <p><strong>11.3</strong> Partijen zullen een geschil niet eerder aan de rechter voorleggen dan nadat zij zich gedurende ten minste 30 dagen hebben ingespannen het geschil in onderling overleg te beslechten.</p>
+    <p><strong>11.4</strong> De toepasselijkheid van het Weens Koopverdrag (CISG) is uitdrukkelijk uitgesloten.</p>
+  </div>
+
+  <!-- ART 12 -->
+  <div class="section" id="art12">
+    <div class="section-header">
+      <span class="section-num">12</span>
+      <h2 class="section-title">Slotbepalingen</h2>
+    </div>
+    <p><strong>12.1</strong> Indien enige bepaling van deze Algemene Voorwaarden nietig of vernietigbaar blijkt, laat dit de geldigheid van de overige bepalingen onverlet. In dat geval zullen partijen een vervangende bepaling overeenkomen die de intentie van de nietige bepaling zo dicht mogelijk benadert.</p>
+    <p><strong>12.2</strong> De Aanbieder behoudt het recht deze Algemene Voorwaarden te wijzigen. Gewijzigde Voorwaarden worden ten minste 30 dagen van tevoren gepubliceerd op het Platform. Voortgezet gebruik na de ingangsdatum geldt als aanvaarding van de gewijzigde Voorwaarden.</p>
+    <p><strong>12.3</strong> Deze Algemene Voorwaarden zijn opgesteld in het Nederlands. In geval van vertaling prevaleert de Nederlandse tekst.</p>
+    <p><strong>12.4</strong> Voor vragen over deze Algemene Voorwaarden kunt u contact opnemen met de Aanbieder via de contactgegevens op het Platform.</p>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="signature-block">
+    <p>Vastgesteld en uitgegeven door</p>
+    <div class="sig-name">Daniel Buszydlo</div>
+    <div class="sig-company">DanmarImport &nbsp;·&nbsp; Carefinder NL</div>
+    <div class="sig-date">Versie 1.0 &nbsp;—&nbsp; Februari 2026 &nbsp;—&nbsp; Nederland</div>
+  </div>
+
+</div><!-- /.page-wrap -->
+
+<footer>
+  &copy; 2026 Carefinder NL — DanmarImport &nbsp;|&nbsp;
+  <a href="/">Terug naar de kaart</a> &nbsp;|&nbsp;
+  <a href="/algemene-voorwaarden">Algemene Voorwaarden</a>
+  <br><br>
+  Alle rechten voorbehouden. Het systeem en de inhoud van dit platform zijn het exclusieve eigendom van Daniel Buszydlo / DanmarImport.
+</footer>
+
+</body>
+</html>

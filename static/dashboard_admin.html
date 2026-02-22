@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carefinder NL – Admin Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0d0d0d;color:#fff;min-height:100vh}
+header{background:#111;border-bottom:3px solid #ffd700;padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:18px;font-weight:900;letter-spacing:2px;color:#ffd700}.logo span{color:#fff}
+.header-right{display:flex;align-items:center;gap:12px}
+.badge-admin{background:#ffd700;color:#000;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
+.btn-map{border:1px solid #ffd700;color:#ffd700;padding:6px 14px;text-decoration:none;border-radius:5px;font-size:13px;font-weight:700}
+.btn-logout{background:#ef4444;color:#fff;padding:8px 18px;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer}
+.container{max-width:1000px;margin:28px auto;padding:0 20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:#111;border:1px solid #222;border-radius:10px;padding:16px;text-align:center}
+.stat-val{font-size:28px;font-weight:900;color:#ffd700}
+.stat-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.card{background:#111;border:1px solid #222;border-radius:12px;padding:20px;margin-bottom:20px}
+.card h3{font-size:15px;font-weight:700;margin-bottom:16px;color:#ffd700}
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+input[type=text]{padding:8px 12px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:6px;font-size:13px;outline:none;min-width:200px}
+input[type=text]:focus{border-color:#ffd700}
+.btn{padding:8px 16px;border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-gold{background:#ffd700;color:#000}
+.btn-red{background:#ef4444;color:#fff}
+.btn-blue{background:#1a6cff;color:#fff}
+.btn-sm{padding:5px 10px;font-size:11px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;color:#555;font-size:11px;text-transform:uppercase;border-bottom:1px solid #222}
+td{padding:9px 10px;border-bottom:1px solid #1a1a1a;vertical-align:middle}
+tr:hover td{background:#151515}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.badge-prem{background:rgba(255,215,0,.2);color:#ffd700;border:1px solid #ffd700}
+.badge-free{background:#1a1a1a;color:#555;border:1px solid #333}
+.badge-tz{background:rgba(34,197,94,.15);color:#22c55e}
+.badge-bh{background:rgba(59,130,246,.15);color:#3b82f6}
+.badge-admin-r{background:rgba(255,215,0,.2);color:#ffd700}
+.pager{display:flex;gap:6px;margin-top:14px;align-items:center;font-size:13px;color:#555}
+.pager button{background:#1a1a1a;border:1px solid #333;color:#fff;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:12px}
+.pager button:hover{border-color:#ffd700;color:#ffd700}
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:#1a1a1a;border-radius:8px;padding:4px;width:fit-content}
+.tab{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;background:transparent;color:#666}
+.tab.active{background:#ffd700;color:#000}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CARE<span>FINDER</span> NL <span class="badge-admin">ADMIN</span></div>
+  <div class="header-right">
+    <a href="/" class="btn-map">🗺 Kaart</a>
+    <button class="btn-logout" onclick="window.location.href='/logout'">Uitloggen</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val" id="s-dir">–</div><div class="stat-label">Directory Firms</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-part">–</div><div class="stat-label">Partner Firms</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-prem">–</div><div class="stat-label">Premium</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-users">–</div><div class="stat-label">Partner Users</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('firms')" id="tab-firms">Partner Bedrijven</button>
+    <button class="tab" onclick="showTab('users')" id="tab-users">Gebruikers</button>
+  </div>
+
+  <div id="section-firms">
+    <div class="card">
+      <h3>Partner Bedrijven</h3>
+      <div class="toolbar">
+        <input type="text" id="search-firm" placeholder="Zoek op naam of eigenaar..." oninput="filterFirms(this.value)">
+        <button class="btn btn-blue" onclick="loadFirms()">↻ Vernieuwen</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Naam</th><th>Categorie</th><th>Status</th><th>Vervaldatum</th><th>Eigenaar</th><th>Acties</th></tr>
+        </thead>
+        <tbody id="firms-body"></tbody>
+      </table>
+      <div class="pager">
+        <button onclick="changePage(-1)">← Vorige</button>
+        <span id="page-info">Pagina 1</span>
+        <button onclick="changePage(1)">Volgende →</button>
+        <span id="total-info" style="margin-left:8px"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="section-users" style="display:none">
+    <div class="card">
+      <h3>Geregistreerde Gebruikers</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Gebruikersnaam</th><th>Rol</th></tr></thead>
+        <tbody id="users-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let allFirms=[], filteredFirms=[], page=0, perPage=20;
+
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('section-firms').style.display=t==='firms'?'block':'none';
+  document.getElementById('section-users').style.display=t==='users'?'block':'none';
+  if(t==='users') loadUsers();
+}
+
+async function loadStats(){
+  const r=await fetch('/api/admin/stats');
+  if(r.status===403){window.location.href='/login';return;}
+  const d=await r.json();
+  document.getElementById('s-dir').textContent=d.directory_firms.toLocaleString();
+  document.getElementById('s-part').textContent=d.partner_firms.toLocaleString();
+  document.getElementById('s-prem').textContent=d.premium_firms.toLocaleString();
+  document.getElementById('s-users').textContent=d.partner_users.toLocaleString();
+}
+
+async function loadFirms(){
+  const r=await fetch('/api/admin/firms');
+  if(r.status===403){window.location.href='/login';return;}
+  allFirms=await r.json();
+  filteredFirms=[...allFirms];page=0;renderFirms();
+}
+
+function filterFirms(q){
+  filteredFirms=q?allFirms.filter(f=>f.name.toLowerCase().includes(q.toLowerCase())||(f.owner_username||'').toLowerCase().includes(q.toLowerCase())):allFirms;
+  page=0;renderFirms();
+}
+
+function renderFirms(){
+  const s=page*perPage,e=s+perPage,sl=filteredFirms.slice(s,e);
+  document.getElementById('page-info').textContent=`Pagina ${page+1} van ${Math.max(1,Math.ceil(filteredFirms.length/perPage))}`;
+  document.getElementById('total-info').textContent=`(${filteredFirms.length} resultaten)`;
+  document.getElementById('firms-body').innerHTML=sl.map(f=>`
+    <tr>
+      <td><strong>${f.name}</strong></td>
+      <td><span class="badge ${f.category==='thuiszorg'?'badge-tz':'badge-bh'}">${f.category}</span></td>
+      <td><span class="badge ${f.is_premium?'badge-prem':'badge-free'}">${f.is_premium?'⭐ PREMIUM':'Gratis'}</span></td>
+      <td style="color:#666;font-size:12px">${f.premium_expiry||'–'}</td>
+      <td style="color:#666;font-size:12px">${f.owner_username||'–'}</td>
+      <td>
+        <button class="btn btn-gold btn-sm" onclick="togglePremium(${f.id})">${f.is_premium?'↓ Downgrade':'⭐ Premium'}</button>
+        <button class="btn btn-red btn-sm" style="margin-left:4px" onclick="deleteFirm(${f.id},'${f.name.replace(/'/g,"\\'").replace(/"/g,"&quot;")}')">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function changePage(d){
+  page=Math.max(0,Math.min(Math.ceil(filteredFirms.length/perPage)-1,page+d));
+  renderFirms();
+}
+
+async function togglePremium(id){
+  await fetch('/api/admin/update_firm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'toggle_premium',id})});
+  loadFirms();loadStats();
+}
+
+async function deleteFirm(id,name){
+  if(!confirm(`Verwijder "${name}"?`)) return;
+  await fetch('/api/admin/update_firm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});
+  loadFirms();loadStats();
+}
+
+async function loadUsers(){
+  const r=await fetch('/api/admin/users');
+  if(r.status===403){window.location.href='/login';return;}
+  const users=await r.json();
+  document.getElementById('users-body').innerHTML=users.map(u=>`
+    <tr>
+      <td style="color:#555">${u.id}</td>
+      <td><strong>${u.username}</strong></td>
+      <td><span class="badge ${u.role==='admin'?'badge-admin-r':'badge-free'}">${u.role}</span></td>
+    </tr>
+  `).join('');
+}
+
+loadStats();loadFirms();
+</script>
+<footer style="text-align:center;padding:16px;font-size:11px;color:#999;border-top:1px solid #f0f0f0;margin-top:32px;">
+  &copy; 2026 Carefinder NL &mdash; DanmarImport &amp; Daniel Buszydlo &nbsp;|&nbsp;
+  <a href="/algemene-voorwaarden" target="_blank" style="color:#aaa;text-decoration:none;">Algemene Voorwaarden</a>
+</footer>
+</body>
+</html>
