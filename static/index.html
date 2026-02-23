@@ -120,7 +120,7 @@ footer a:hover{color:var(--gold)}
     </div>
     <div style="margin-top:auto;padding-top:12px">
       <button class="sidebar-btn btn-premium" id="t-premium" onclick="startPay()">⭐ UPGRADE PREMIUM (€150)</button>
-      <button class="sidebar-btn btn-topup" id="t-topup" onclick="window.location.href='/login'">PARTNER AANMELDEN</button>
+      <button class="sidebar-btn btn-topup" id="t-topup" onclick="startPpcTopup()">💳 TOP-UP €50 PPC</button>
     </div>
   </div>
 
@@ -395,6 +395,21 @@ async function startPay() {
   } catch(e) { showToast('Betalingsfout'); }
 }
 
+/* ── PPC TOPUP ── */
+async function startPpcTopup() {
+  const me = await fetch('/api/me').then(r=>r.json());
+  if (!me.logged_in) { window.location.href='/login'; return; }
+  const cfg = await fetch('/api/config').then(r=>r.json());
+  if (!cfg.stripe_pk) { showToast('Stripe niet beschikbaar.'); return; }
+  const st = Stripe(cfg.stripe_pk);
+  try {
+    const r = await fetch('/api/create-ppc-topup-session', {method:'POST', headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    if (d.id) st.redirectToCheckout({sessionId: d.id});
+    else showToast(d.detail||'Betalingsfout');
+  } catch(e) { showToast('Verbindingsfout'); }
+}
+
 /* ── AI CHAT ── */
 function toggleAI() {
   const w = document.getElementById('ai-window');
@@ -444,10 +459,10 @@ function showToast(m, ms=3000) {
 
 /* ── I18N ── */
 const T = {
-  nl:{login:'PARTNER LOG-IN',all:'ALLE ZORGAANBIEDERS',tz:'THUISZORG',bh:'VERZORGINGSHUIZEN',filter:'Filter categorie',premium:'⭐ UPGRADE PREMIUM (€150)',topup:'PARTNER AANMELDEN',aiph:'Uw vraag...'},
-  en:{login:'PARTNER LOGIN',all:'ALL CARE PROVIDERS',tz:'HOME CARE',bh:'NURSING HOMES',filter:'Filter category',premium:'⭐ UPGRADE PREMIUM (€150)',topup:'REGISTER AS PARTNER',aiph:'Your question...'},
-  pl:{login:'LOGOWANIE PARTNERA',all:'WSZYSCY DOSTAWCY',tz:'OPIEKA DOMOWA',bh:'DOMY OPIEKI',filter:'Filtr',premium:'⭐ KONTO PREMIUM (€150)',topup:'ZAREJESTRUJ FIRMĘ',aiph:'Twoje pytanie...'},
-  de:{login:'PARTNER-LOGIN',all:'ALLE ANBIETER',tz:'HAUSPFLEGE',bh:'PFLEGEHEIME',filter:'Kategorie filtern',premium:'⭐ PREMIUM (€150)',topup:'PARTNER ANMELDEN',aiph:'Ihre Frage...'},
+  nl:{login:'PARTNER LOG-IN',all:'ALLE ZORGAANBIEDERS',tz:'THUISZORG',bh:'VERZORGINGSHUIZEN',filter:'Filter categorie',premium:'⭐ UPGRADE PREMIUM (€150)',topup:'💳 TOP-UP €50 PPC',aiph:'Uw vraag...'},
+  en:{login:'PARTNER LOGIN',all:'ALL CARE PROVIDERS',tz:'HOME CARE',bh:'NURSING HOMES',filter:'Filter category',premium:'⭐ UPGRADE PREMIUM (€150)',topup:'💳 TOP-UP €50 PPC',aiph:'Your question...'},
+  pl:{login:'LOGOWANIE PARTNERA',all:'WSZYSCY DOSTAWCY',tz:'OPIEKA DOMOWA',bh:'DOMY OPIEKI',filter:'Filtr',premium:'⭐ KONTO PREMIUM (€150)',topup:'💳 TOP-UP €50 PPC',aiph:'Twoje pytanie...'},
+  de:{login:'PARTNER-LOGIN',all:'ALLE ANBIETER',tz:'HAUSPFLEGE',bh:'PFLEGEHEIME',filter:'Kategorie filtern',premium:'⭐ PREMIUM (€150)',topup:'💳 TOP-UP €50 PPC',aiph:'Ihre Frage...'},
 };
 function setLang(l) {
   document.querySelectorAll('.lang-btns button').forEach(b=>b.classList.remove('active'));
