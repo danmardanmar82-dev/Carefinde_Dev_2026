@@ -453,7 +453,14 @@ Je hebt diepgaande expertise in:
 
 Gebruik de kaart om te wijzen naar aanbieders in de buurt van de gebruiker.
 Geef altijd concrete, empathische en praktische adviezen.
-Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of Duits."""
+Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of Duits.
+
+⛔ STRIKT VERBODEN — beantwoord NOOIT vragen over:
+- Financiering, leningen, kredieten, hypotheken of bancaire producten
+- Subsidies anders dan directe zorgvergoedingen (WLZ/WMO/ZVW)
+- Investeringsadvies of financiële planning
+- Verzekeringen anders dan zorgverzekeringen
+Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor kunt u contact opnemen met uw bank of een financieel adviseur. Ik help alleen bij vragen over thuiszorg en verzorgingshuizen." """
 
     @api.post("/ai-assistant")
     async def ai_assistant(data: AIMessage):
