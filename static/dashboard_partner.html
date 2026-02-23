@@ -73,6 +73,9 @@ select option{background:#1a1a1a}
       <option value="verzorgingshuis">Verzorgings- / Verpleeghuis</option>
     </select>
 
+    <label>Stad</label>
+    <input type="text" id="firm-city" placeholder="Bijv. Amsterdam">
+
     <div class="row2">
       <div>
         <label>Latitude</label>
@@ -145,6 +148,7 @@ async function loadInfo(){
   if(d.username) document.getElementById('user-name').textContent=d.username;
   if(d.name) document.getElementById('firm-name').value=d.name||'';
   if(d.category) document.getElementById('firm-cat').value=d.category;
+  document.getElementById('firm-city').value=d.city||'';
   document.getElementById('firm-lat').value=d.lat||'';
   document.getElementById('firm-lng').value=d.lng||'';
   document.getElementById('firm-contact').value=d.contact_info||'';
@@ -171,6 +175,7 @@ async function loadInfo(){
 async function saveFirm(){
   const name=document.getElementById('firm-name').value.trim();
   const cat=document.getElementById('firm-cat').value;
+  const city=document.getElementById('firm-city').value.trim();
   const lat=parseFloat(document.getElementById('firm-lat').value);
   const lng=parseFloat(document.getElementById('firm-lng').value);
   const contact=document.getElementById('firm-contact').value.trim();
@@ -180,7 +185,7 @@ async function saveFirm(){
   if(!name||isNaN(lat)||isNaN(lng)){showMsg('save-msg','err','Naam en coördinaten zijn verplicht.');return;}
   if(lat<50||lat>54||lng<3||lng>8){showMsg('save-msg','err','Coördinaten buiten Nederland.');return;}
   const r=await fetch('/api/partner/update',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name,cat,lat,lng,contact,total_slots,occupied_slots,ad_text})});
+    body:JSON.stringify({name,cat,city,lat,lng,contact,total_slots,occupied_slots,ad_text})});
   if(r.ok) showMsg('save-msg','ok','✅ Bedrijfsgegevens opgeslagen!');
   else showMsg('save-msg','err','Fout bij opslaan.');
 }

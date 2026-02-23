@@ -174,6 +174,7 @@ class AIMessage(BaseModel):
 class FirmData(BaseModel):
     name: str
     cat: str
+    city: Optional[str] = None
     lat: float
     lng: float
     contact: Optional[str] = None
@@ -339,13 +340,13 @@ def create_app(static_dir: str) -> FastAPI:
                 existing = cur.fetchone()
                 if existing:
                     cur.execute(
-                        "UPDATE companies SET name=%s,category=%s,lat=%s,lng=%s,contact_info=%s,total_slots=%s,occupied_slots=%s,ad_text=%s WHERE owner_username=%s",
-                        (data.name, data.cat, data.lat, data.lng, data.contact, data.total_slots, data.occupied_slots, data.ad_text, sess["username"]),
+                        "UPDATE companies SET name=%s,category=%s,city=%s,lat=%s,lng=%s,contact_info=%s,total_slots=%s,occupied_slots=%s,ad_text=%s WHERE owner_username=%s",
+                        (data.name, data.cat, data.city, data.lat, data.lng, data.contact, data.total_slots, data.occupied_slots, data.ad_text, sess["username"]),
                     )
                 else:
                     cur.execute(
-                        "INSERT INTO companies (name,category,lat,lng,contact_info,total_slots,occupied_slots,ad_text,owner_username,is_premium,is_real) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,FALSE,TRUE)",
-                        (data.name, data.cat, data.lat, data.lng, data.contact, data.total_slots, data.occupied_slots, data.ad_text, sess["username"]),
+                        "INSERT INTO companies (name,category,city,lat,lng,contact_info,total_slots,occupied_slots,ad_text,owner_username,is_premium,is_real) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,FALSE,TRUE)",
+                        (data.name, data.cat, data.city, data.lat, data.lng, data.contact, data.total_slots, data.occupied_slots, data.ad_text, sess["username"]),
                     )
         return {"status": "success"}
 

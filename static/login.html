@@ -105,8 +105,10 @@ async function doRegister(){
     const r = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
     const d = await r.json();
     if(r.ok){
-      showMsg('register-msg','ok','Account aangemaakt! Nu inloggen...');
-      setTimeout(()=>switchTab('login'), 1500);
+      showMsg('register-msg','ok','Account aangemaakt! Inloggen...');
+      const lr = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+      if(lr.ok){ setTimeout(()=>window.location.href='/dashboard', 800); }
+      else { setTimeout(()=>switchTab('login'), 1200); }
     } else {
       showMsg('register-msg','err', d.detail||'Registratiefout.');
     }
