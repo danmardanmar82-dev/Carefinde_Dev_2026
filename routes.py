@@ -413,6 +413,17 @@ def create_app(static_dir: str) -> FastAPI:
                     )
         return {"status": "success"}
 
+    @api.post("/admin/reset-premium")
+    def admin_reset_premium(request: Request):
+        require_admin(request)
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE companies SET is_premium=FALSE, premium_expiry=NULL WHERE owner_username != 'zesta_groep'"
+                )
+                count = cur.rowcount
+        return {"reset": count, "message": f"{count} bedrijven teruggezet naar gratis"}
+
     @api.get("/admin/users")
     def admin_get_users(request: Request):
         require_admin(request)
