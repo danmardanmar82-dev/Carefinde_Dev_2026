@@ -116,9 +116,19 @@ select option{background:#1a1a1a}
     </ul>
     <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-gold" onclick="startPay('premium')" id="btn-premium">⭐ PREMIUM — €150/maand</button>
-      <button class="btn btn-blue" onclick="startPay('topup')">TOP-UP — €50</button>
     </div>
     <div class="msg" id="pay-msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>💰 PPC Advertentiebudget</h3>
+    <div class="desc">Voeg budget toe om bovenaan de zoekresultaten te verschijnen via pay-per-click advertenties.</div>
+    <div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:#888;font-size:13px">Huidig PPC budget</span>
+      <span style="color:#ffd700;font-size:22px;font-weight:900" id="ppc-balance">€ –</span>
+    </div>
+    <button class="btn btn-blue" onclick="startPpcTopup()">💳 TOP-UP — €50 PPC BUDGET</button>
+    <div class="msg" id="ppc-msg"></div>
   </div>
 </div>
 
@@ -147,6 +157,14 @@ async function loadInfo(){
     b.textContent='⭐ PREMIUM ACCOUNT ACTIEF — Geldig tot: '+(d.premium_expiry||'–');
     document.getElementById('btn-premium').disabled=true;
     document.getElementById('btn-premium').style.opacity='.5';
+  }
+  // PPC budget
+  const st=await fetch('/api/partner/status').then(r=>r.json()).catch(()=>({}));
+  const bal=document.getElementById('ppc-balance');
+  if(bal) bal.textContent='€ '+(st.ppc_budget!=null?parseFloat(st.ppc_budget).toFixed(2):'0.00');
+  // PPC success notice
+  if(window.location.search.includes('ppc_success=true')){
+    showMsg('ppc-msg','ok','✅ €50 PPC budget toegevoegd!');
   }
 }
 
@@ -177,6 +195,18 @@ async function startPay(action){
     if(d.id) st.redirectToCheckout({sessionId:d.id});
     else showMsg('pay-msg','err',d.detail||'Betalingsfout.');
   }catch(e){showMsg('pay-msg','err','Verbindingsfout.');}
+}
+
+async function startPpcTopup(){
+  try{
+    const cfg=await fetch('/api/config').then(r=>r.json());
+    if(!cfg.stripe_pk){showMsg('ppc-msg','err','Stripe niet geconfigureerd.');return;}
+    const st=Stripe(cfg.stripe_pk);
+    const r=await fetch('/api/create-ppc-topup-session',{method:'POST',headers:{'Content-Type':'application/json'}});
+    const d=await r.json();
+    if(d.id) st.redirectToCheckout({sessionId:d.id});
+    else showMsg('ppc-msg','err',d.detail||'Betalingsfout.');
+  }catch(e){showMsg('ppc-msg','err','Verbindingsfout.');}
 }
 
 function getMyLocation(){

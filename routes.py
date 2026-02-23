@@ -115,8 +115,12 @@ def ensure_tables():
                     occupied_slots INTEGER DEFAULT 0,
                     ad_text TEXT,
                     owner_username TEXT,
-                    is_real BOOLEAN DEFAULT TRUE
+                    is_real BOOLEAN DEFAULT TRUE,
+                    ppc_budget NUMERIC(10,2) DEFAULT 0
                 )
+            """)
+            cur.execute("""
+                ALTER TABLE companies ADD COLUMN IF NOT EXISTS ppc_budget NUMERIC(10,2) DEFAULT 0
             """)
             cur.execute("""
                 INSERT INTO users (username, password, role)
@@ -360,13 +364,17 @@ def create_app(static_dir: str) -> FastAPI:
         with get_db() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT is_premium, premium_expiry FROM companies WHERE owner_username=%s", (sess["username"],)
+                    "SELECT is_premium, premium_expiry, ppc_budget FROM companies WHERE owner_username=%s", (sess["username"],)
                 )
                 row = cur.fetchone()
         if not row:
-            return {"is_premium": False, "premium_expiry": None}
+            return {"is_premium": False, "premium_expiry": None, "ppc_budget": 0}
         expiry = row["premium_expiry"]
-        return {"is_premium": bool(row["is_premium"]), "premium_expiry": str(expiry) if expiry else None}
+        return {
+            "is_premium": bool(row["is_premium"]),
+            "premium_expiry": str(expiry) if expiry else None,
+            "ppc_budget": float(row["ppc_budget"] or 0),
+        }
 
     # ── Admin API ─────────────────────────────────────────────────────────────
     @api.get("/admin/firms")
@@ -475,6 +483,45 @@ Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of
             return {"id": checkout.id}
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+    @api.post("/create-ppc-topup-session")
+    def create_ppc_topup(request: Request):
+        sess = require_session(request)
+        sk = get_stripe_secret()
+        if not sk:
+            raise HTTPException(status_code=500, detail="Stripe niet geconfigureerd")
+        stripe.api_key = sk
+        host = str(request.base_url).rstrip("/")
+        try:
+            checkout = stripe.checkout.Session.create(
+                payment_method_types=["card", "ideal"],
+                client_reference_id=sess["username"],
+                line_items=[{"price_data": {"currency": "eur", "product_data": {"name": "Carefinder PPC Budget Top-up"}, "unit_amount": 5000}, "quantity": 1}],
+                mode="payment",
+                success_url=f"{host}/payment-ppc-success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{host}/dashboard?cancel=true",
+            )
+            return {"id": checkout.id}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    @app.get("/payment-ppc-success")
+    def payment_ppc_success(session_id: str):
+        sk = get_stripe_secret()
+        if sk:
+            stripe.api_key = sk
+            try:
+                stripe_sess = stripe.checkout.Session.retrieve(session_id)
+                if stripe_sess.payment_status == "paid":
+                    with get_db() as conn:
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                "UPDATE companies SET ppc_budget = COALESCE(ppc_budget, 0) + 50 WHERE owner_username=%s",
+                                (stripe_sess.client_reference_id,),
+                            )
+            except Exception:
+                pass
+        return RedirectResponse("/dashboard?ppc_success=true", status_code=302)
 
     @app.get("/payment-success")
     def payment_success(session_id: str):
