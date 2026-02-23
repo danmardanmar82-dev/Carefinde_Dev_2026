@@ -481,7 +481,40 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
                 model="gemini-2.5-flash",
                 contents=prompt,
             )
-            return {"reply": response.text}
+            reply = response.text
+
+            # ── Map action: zoek stad of firma in DB ──────────────────────────
+            map_lat, map_lng, map_label, map_zoom = None, None, None, 13
+            try:
+                with get_db() as conn:
+                    with conn.cursor() as cur:
+                        # Zoek op naam van firma
+                        cur.execute(
+                            "SELECT name, lat, lng, city FROM companies WHERE name ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
+                            (f"%{data.message}%",)
+                        )
+                        row = cur.fetchone()
+                        if row:
+                            map_lat, map_lng, map_label, map_zoom = row["lat"], row["lng"], row["name"], 15
+                        else:
+                            # Zoek op stad
+                            cur.execute(
+                                "SELECT name, lat, lng, city FROM companies WHERE city ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
+                                (f"%{data.message}%",)
+                            )
+                            row = cur.fetchone()
+                            if row:
+                                map_lat, map_lng, map_label, map_zoom = row["lat"], row["lng"], row["city"], 12
+            except Exception:
+                pass
+
+            result = {"reply": reply}
+            if map_lat and map_lng:
+                result["map_lat"] = map_lat
+                result["map_lng"] = map_lng
+                result["map_zoom"] = map_zoom
+                result["map_label"] = map_label
+            return result
         except Exception as e:
             return {"reply": f"AI tijdelijk niet beschikbaar. ({str(e)[:120]})"}
 

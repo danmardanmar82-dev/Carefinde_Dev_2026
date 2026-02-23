@@ -451,6 +451,13 @@ async function sendAI() {
     const d = await r.json();
     typing.remove();
     box.innerHTML += `<div class="msg-ai">${esc(d.reply||'Geen antwoord')}</div>`;
+    // ── Map navigatie op basis van AI antwoord ──
+    if (d.map_lat && d.map_lng) {
+      map.setView([d.map_lat, d.map_lng], d.map_zoom || 13, {animate: true, duration: 1.2});
+      if (d.map_label) {
+        box.innerHTML += `<div class="msg-ai" style="font-size:11px;color:#94a3b8">📍 Kaart verplaatst naar: <strong>${esc(d.map_label)}</strong></div>`;
+      }
+    }
   } catch(e) {
     typing.remove();
     box.innerHTML += `<div class="msg-ai">Verbindingsfout.</div>`;
