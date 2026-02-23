@@ -484,6 +484,17 @@ Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+    @api.post("/firms/{firm_id}/click")
+    def track_click(firm_id: int):
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE companies SET ppc_budget = ppc_budget - 1
+                       WHERE id = %s AND ppc_budget >= 1""",
+                    (firm_id,),
+                )
+        return {"ok": True}
+
     @api.post("/create-ppc-topup-session")
     def create_ppc_topup(request: Request):
         sess = require_session(request)

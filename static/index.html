@@ -269,6 +269,11 @@ function renderMarkers(firms) {
       isPremium: !!f.is_premium
     });
     marker.bindPopup(buildPopup(f), {maxWidth: 260});
+    if (f.id) {
+      marker.on('click', () => {
+        fetch(`/api/firms/${f.id}/click`, {method: 'POST'}).catch(()=>{});
+      });
+    }
     cluster.addLayer(marker);
   });
 }
