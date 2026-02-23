@@ -416,13 +416,17 @@ def create_app(static_dir: str) -> FastAPI:
     @api.post("/admin/reset-premium")
     def admin_reset_premium(request: Request):
         require_admin(request)
+        from datetime import datetime, timedelta
+        expiry = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
         with get_db() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE companies SET is_premium=FALSE, premium_expiry=NULL WHERE NOT (name='Zesta Zorggroep' AND city='Heerlen')"
-                )
+                cur.execute("UPDATE companies SET is_premium=FALSE, premium_expiry=NULL WHERE is_premium=TRUE")
                 count = cur.rowcount
-        return {"reset": count, "message": f"{count} bedrijven teruggezet naar gratis"}
+                cur.execute(
+                    "UPDATE companies SET is_premium=TRUE, premium_expiry=%s WHERE name='Zesta Zorggroep' AND city='Heerlen'",
+                    (expiry,)
+                )
+        return {"reset": count, "message": f"{count} bedrijven gereset. Alleen Zesta Zorggroep is premium."}
 
     @api.get("/admin/users")
     def admin_get_users(request: Request):
