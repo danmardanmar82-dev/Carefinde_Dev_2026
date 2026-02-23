@@ -419,7 +419,7 @@ def create_app(static_dir: str) -> FastAPI:
         with get_db() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE companies SET is_premium=FALSE, premium_expiry=NULL WHERE owner_username != 'zesta_groep'"
+                    "UPDATE companies SET is_premium=FALSE, premium_expiry=NULL WHERE NOT (name='Zesta Zorggroep' AND city='Heerlen')"
                 )
                 count = cur.rowcount
         return {"reset": count, "message": f"{count} bedrijven teruggezet naar gratis"}
