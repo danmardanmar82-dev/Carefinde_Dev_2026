@@ -496,7 +496,7 @@ Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of
             checkout = stripe.checkout.Session.create(
                 payment_method_types=["card", "ideal"],
                 client_reference_id=sess["username"],
-                line_items=[{"price_data": {"currency": "eur", "product_data": {"name": "Carefinder PPC Budget Top-up"}, "unit_amount": 5000}, "quantity": 1}],
+                line_items=[{"price_data": {"currency": "eur", "product_data": {"name": "Carefinder Pay Per Click — €50 tegoed"}, "unit_amount": 5000}, "quantity": 1}],
                 mode="payment",
                 success_url=f"{host}/payment-ppc-success?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{host}/dashboard?cancel=true",
