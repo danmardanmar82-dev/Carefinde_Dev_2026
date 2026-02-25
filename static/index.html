@@ -116,6 +116,7 @@ footer a:hover{color:var(--gold)}
     <button class="sidebar-btn btn-all" id="t-all" onclick="filterMap(null)">ALLE ZORGAANBIEDERS</button>
     <button class="sidebar-btn btn-tz" id="t-tz" onclick="filterMap('thuiszorg')">THUISZORG</button>
     <button class="sidebar-btn btn-bh" id="t-bh" onclick="filterMap('verzorgingshuis')">VERZORGINGSHUIZEN</button>
+    <button class="sidebar-btn" id="t-nearby" onclick="loadNearby()" style="background:#fff8e1;color:#7a5800;border-left:5px solid #ffd700;text-align:left;padding-left:14px">📍 IN MIJN BUURT (50 KM)</button>
     <div class="stats-box" style="margin-top:10px">
       <div id="t-stats-label" style="color:#666;margin-bottom:6px;font-size:11px">AANBIEDERS OP DE KAART</div>
       <div>🟢 Thuiszorg: <span id="cnt-tz">–</span></div>
@@ -185,7 +186,7 @@ const STRIPE_PUB = "{{ stripe_pub }}";
 const stripe = STRIPE_PUB && STRIPE_PUB !== 'None' && STRIPE_PUB !== '' ? Stripe(STRIPE_PUB) : null;
 
 /* ── MAP INIT ── */
-const map = L.map('map', {center:[52.13,5.29], zoom:7, zoomControl:true});
+const map = L.map('map', {center:[52.37,5.30], zoom:8, zoomControl:true, maxBounds:[[49.5,2.0],[54.0,8.0]], maxBoundsViscosity:0.7});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution:'&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
   maxZoom:19
@@ -211,22 +212,29 @@ map.addLayer(cluster);
 let allFirms = [], activeFilter = null;
 
 /* ── ICONS ── */
-function makeIcon(isPremium, cat) {
+function makeIcon(isPremium, cat, hasVacancy) {
+  const vacBadge = hasVacancy
+    ? `<div style="position:absolute;top:-7px;right:-9px;background:#f97316;color:#fff;font-size:8px;font-weight:900;padding:1px 4px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4);letter-spacing:.3px">VACATURE</div>`
+    : '';
   if (isPremium) {
     return L.divIcon({
       className:'',
-      html:`<div style="position:relative;width:22px;height:28px">
+      html:`<div style="position:relative;width:28px;height:34px">
         <div style="width:22px;height:22px;background:#ffd700;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #b8860b;box-shadow:0 0 10px rgba(255,215,0,.8)"></div>
         <div style="position:absolute;top:3px;left:3px;width:10px;height:10px;background:#fff;border-radius:50%;transform:rotate(45deg)"></div>
+        ${vacBadge}
       </div>`,
-      iconSize:[22,28], iconAnchor:[11,28], popupAnchor:[0,-28]
+      iconSize:[28,34], iconAnchor:[11,28], popupAnchor:[0,-30]
     });
   }
   const color = cat === 'thuiszorg' ? '#22c55e' : '#3b82f6';
   return L.divIcon({
     className:'',
-    html:`<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px ${color}99"></div>`,
-    iconSize:[14,14], iconAnchor:[7,7], popupAnchor:[0,-8]
+    html:`<div style="position:relative;width:22px;height:18px">
+      <div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px ${color}99"></div>
+      ${vacBadge}
+    </div>`,
+    iconSize:[22,18], iconAnchor:[7,7], popupAnchor:[0,-10]
   });
 }
 
@@ -234,11 +242,20 @@ function makeIcon(isPremium, cat) {
 function buildPopup(f) {
   const cat = f.category === 'thuiszorg' ? '🏠 Thuiszorg' : '🏥 Verzorgingshuis';
   const city = f.city ? ` · ${f.city}` : '';
+  const vacBadge = f.has_vacancy
+    ? `<div style="background:#f97316;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:6px">🔔 WIJ ZOEKEN PERSONEEL</div>`
+    : '';
+  const vacText = (f.has_vacancy && f.vacancy_text)
+    ? `<div style="font-size:11px;color:#f97316;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:7px 9px;margin-bottom:6px;line-height:1.4">${esc(f.vacancy_text)}</div>`
+    : '';
+
   if (!f.is_premium) {
     return `<div class="popup-inner">
+      ${vacBadge}${vacText}
       <div class="popup-name">${esc(f.name)}</div>
       <div class="popup-cat">${cat}${city}</div>
       <div style="font-size:11px;color:#aaa;font-style:italic;margin-top:6px">Contactgegevens beschikbaar bij Premium ⭐</div>
+      ${buildContactForm(f.id, f.name)}
     </div>`;
   }
   // Premium popup
@@ -260,12 +277,55 @@ function buildPopup(f) {
         ${esc(f.ad_text)}
       </div>`
     : '';
+  const photo = f.photo_url
+    ? `<div style="margin:8px 0"><img src="${esc(f.photo_url)}" alt="${esc(f.name)}" style="width:100%;max-height:120px;object-fit:cover;border-radius:7px" onerror="this.style.display='none'"></div>`
+    : '';
+  let video = '';
+  if (f.video_url) {
+    if (f.video_url.includes('youtube.com') || f.video_url.includes('youtu.be') || f.video_url.includes('vimeo.com')) {
+      video = `<div style="margin:8px 0"><iframe src="${esc(f.video_url)}" width="100%" height="110" frameborder="0" allowfullscreen style="border-radius:7px"></iframe></div>`;
+    } else {
+      video = `<div style="margin:8px 0"><video src="${esc(f.video_url)}" controls style="width:100%;max-height:110px;border-radius:7px"></video></div>`;
+    }
+  }
   return `<div class="popup-inner">
     <div class="popup-premium-badge">⭐ PREMIUM PARTNER</div>
+    ${vacBadge}${vacText}
     <div class="popup-name">${esc(f.name)}</div>
     <div class="popup-cat">${cat}${city}</div>
+    ${photo}${video}
     ${contact}${slots}${ad}
+    ${buildContactForm(f.id, f.name)}
   </div>`;
+}
+
+/* ── DIRECT CONTACT FORMULIER ── */
+function buildContactForm(companyId, companyName) {
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee">
+    <div style="font-size:11px;font-weight:700;color:#1a6cff;margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em">✉️ Direct contact voor familie</div>
+    <input type="text" id="cf-name-${companyId}" placeholder="Uw naam" style="width:100%;padding:6px 9px;border:1px solid #dde3ed;border-radius:5px;font-size:12px;margin-bottom:5px;outline:none;color:#111">
+    <input type="email" id="cf-email-${companyId}" placeholder="Uw e-mailadres" style="width:100%;padding:6px 9px;border:1px solid #dde3ed;border-radius:5px;font-size:12px;margin-bottom:5px;outline:none;color:#111">
+    <textarea id="cf-msg-${companyId}" rows="2" placeholder="Uw bericht..." style="width:100%;padding:6px 9px;border:1px solid #dde3ed;border-radius:5px;font-size:12px;resize:none;outline:none;color:#111"></textarea>
+    <button onclick="sendContact(${companyId})" style="margin-top:5px;width:100%;padding:7px;background:#1a6cff;color:#fff;border:none;border-radius:5px;font-weight:700;font-size:12px;cursor:pointer">📨 Versturen</button>
+    <div id="cf-ok-${companyId}" style="display:none;color:#16a34a;font-size:11px;font-weight:700;margin-top:5px;text-align:center">✅ Bericht verzonden!</div>
+    <div id="cf-err-${companyId}" style="display:none;color:#dc2626;font-size:11px;margin-top:5px;text-align:center"></div>
+  </div>`;
+}
+
+async function sendContact(companyId) {
+  const name = document.getElementById(`cf-name-${companyId}`)?.value.trim();
+  const email = document.getElementById(`cf-email-${companyId}`)?.value.trim();
+  const msg = document.getElementById(`cf-msg-${companyId}`)?.value.trim();
+  const okEl = document.getElementById(`cf-ok-${companyId}`);
+  const errEl = document.getElementById(`cf-err-${companyId}`);
+  if (!name || !email || !msg) { errEl.textContent='Vul alle velden in.'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  try {
+    const r = await fetch('/api/contact-message', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({company_id: companyId, sender_name: name, sender_email: email, message: msg})});
+    if (r.ok) { okEl.style.display='block'; document.getElementById(`cf-msg-${companyId}`).value=''; }
+    else { const d=await r.json(); errEl.textContent=d.detail||'Fout bij verzenden.'; errEl.style.display='block'; }
+  } catch(e) { errEl.textContent='Verbindingsfout.'; errEl.style.display='block'; }
 }
 
 /* ── RENDER MARKERS ── */
@@ -274,10 +334,10 @@ function renderMarkers(firms) {
   firms.forEach(f => {
     if (!f.lat || !f.lng) return;
     const marker = L.marker([f.lat, f.lng], {
-      icon: makeIcon(f.is_premium, f.category),
+      icon: makeIcon(f.is_premium, f.category, f.has_vacancy),
       isPremium: !!f.is_premium
     });
-    marker.bindPopup(buildPopup(f), {maxWidth: 260});
+    marker.bindPopup(buildPopup(f), {maxWidth: 290});
     if (f.id) {
       marker.on('click', () => {
         fetch(`/api/firms/${f.id}/click`, {method: 'POST'}).catch(()=>{});
@@ -348,23 +408,47 @@ async function loadAds() {
 
 function flyTo(lat, lng) { map.setView([lat, lng], 15, {animate:true, duration:1.2}); }
 
+/* ── W MOJEJ OKOLICY ── */
+let userPos = null;
+async function loadNearby() {
+  async function fetchNearby(lat, lng) {
+    try {
+      showToast('📍 Zoeken in uw omgeving...');
+      const firms = await fetch(`/api/firms/nearby?lat=${lat}&lng=${lng}&radius_km=50&limit=200`).then(r=>r.json());
+      allFirms = firms;
+      renderMarkers(firms);
+      map.setView([lat, lng], 11, {animate:true, duration:1.2});
+      showToast(`📍 ${firms.length} aanbieders gevonden binnen 50 km`);
+    } catch(e) { showToast('Fout bij laden nabije aanbieders'); }
+  }
+  if (userPos) { fetchNearby(userPos[0], userPos[1]); return; }
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => { userPos=[pos.coords.latitude, pos.coords.longitude]; fetchNearby(userPos[0], userPos[1]); },
+      async () => {
+        try { const d=await fetch('https://ipapi.co/json/').then(r=>r.json()); if(d.latitude){userPos=[d.latitude,d.longitude];fetchNearby(userPos[0],userPos[1]);} } catch(e){ showToast('Locatie niet beschikbaar'); }
+      }, {timeout:5000}
+    );
+  } else {
+    try { const d=await fetch('https://ipapi.co/json/').then(r=>r.json()); if(d.latitude){userPos=[d.latitude,d.longitude];fetchNearby(userPos[0],userPos[1]);} } catch(e){ showToast('Locatie niet beschikbaar'); }
+  }
+}
+
 /* ── IP GEOLOCATION ── */
 (async () => {
   try {
-    // Try browser geolocation first (more accurate)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => map.setView([pos.coords.latitude, pos.coords.longitude], 12, {animate:true}),
+        pos => { userPos=[pos.coords.latitude, pos.coords.longitude]; map.setView(userPos, 12, {animate:true}); },
         async () => {
-          // Fallback to IP geolocation
           const d = await fetch('https://ipapi.co/json/').then(r=>r.json());
-          if (d.latitude) map.setView([d.latitude, d.longitude], 11, {animate:true});
+          if (d.latitude) { userPos=[d.latitude,d.longitude]; map.setView(userPos, 11, {animate:true}); }
         },
         {timeout:5000}
       );
     } else {
       const d = await fetch('https://ipapi.co/json/').then(r=>r.json());
-      if (d.latitude) map.setView([d.latitude, d.longitude], 11, {animate:true});
+      if (d.latitude) { userPos=[d.latitude,d.longitude]; map.setView(userPos, 11, {animate:true}); }
     }
   } catch(e) {}
 })();
@@ -451,12 +535,16 @@ async function sendAI() {
     const d = await r.json();
     typing.remove();
     box.innerHTML += `<div class="msg-ai">${esc(d.reply||'Geen antwoord')}</div>`;
-    // ── Map navigatie op basis van AI antwoord ──
     if (d.map_lat && d.map_lng) {
       map.setView([d.map_lat, d.map_lng], d.map_zoom || 13, {animate: true, duration: 1.2});
       if (d.map_label) {
         box.innerHTML += `<div class="msg-ai" style="font-size:11px;color:#94a3b8">📍 Kaart verplaatst naar: <strong>${esc(d.map_label)}</strong></div>`;
       }
+    }
+    if (d.map_firms && d.map_firms.length) {
+      allFirms = d.map_firms;
+      renderMarkers(d.map_firms);
+      box.innerHTML += `<div class="msg-ai" style="font-size:11px;color:#94a3b8">🗺️ ${d.map_firms.length} aanbieders zichtbaar op de kaart</div>`;
     }
   } catch(e) {
     typing.remove();

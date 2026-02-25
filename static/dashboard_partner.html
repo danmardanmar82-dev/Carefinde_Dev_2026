@@ -91,7 +91,10 @@ select option{background:#1a1a1a}
     </div>
 
     <label>Contactgegevens <span style="color:#555;font-size:11px">(zichtbaar bij Premium)</span></label>
-    <input type="text" id="firm-contact" placeholder="Telefoon, website, e-mail...">
+    <input type="text" id="firm-contact" placeholder="Telefoon, website...">
+
+    <label>Contact e-mail <span style="color:#555;font-size:11px">(voor direct contact formulier van families)</span></label>
+    <input type="email" id="firm-email" placeholder="info@uwbedrijf.nl">
 
     <div class="row2">
       <div><label>Totaal plaatsen</label><input type="number" id="firm-slots" value="0" min="0"></div>
@@ -105,6 +108,49 @@ select option{background:#1a1a1a}
       <button class="btn btn-gold" onclick="saveFirm()">💾 OPSLAAN</button>
     </div>
     <div class="msg" id="save-msg"></div>
+  </div>
+
+  <!-- ── VACATURE CARD ── -->
+  <div class="card">
+    <h3>👔 Vacature — Plaats een vacature</h3>
+    <div class="desc">Zoekt u nieuwe medewerkers? Activeer de vacature badge op uw pin en voeg een tekst toe. Zichtbaar op de kaart voor iedereen.</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+      <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:13px;color:#ccc;text-transform:none;letter-spacing:0">
+        <input type="checkbox" id="vac-active" style="width:18px;height:18px;accent-color:#ffd700;cursor:pointer">
+        Vacature actief — toon badge op kaartpin
+      </label>
+    </div>
+    <label>Vacaturetekst <span style="color:#555;font-size:11px">(optioneel)</span></label>
+    <textarea id="vac-text" rows="3" style="width:100%;padding:10px 13px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:7px;font-size:13px;outline:none;resize:vertical" placeholder="Bijv.: Wij zoeken een wijkverpleegkundige voor ons team."></textarea>
+    <div style="margin-top:14px">
+      <button class="btn btn-gold" onclick="saveVacancy()">💾 VACATURE OPSLAAN</button>
+    </div>
+    <div class="msg" id="vac-msg"></div>
+  </div>
+
+  <!-- ── MEDIA CARD ── -->
+  <div class="card">
+    <h3>📸 Media — Foto &amp; Video</h3>
+    <div class="desc">Voeg een foto en/of promotievideo toe via URL. Zichtbaar in uw popup op de kaart (Premium).</div>
+    <label>Foto URL</label>
+    <input type="url" id="media-photo" placeholder="https://uw-website.nl/foto.jpg" oninput="previewPhoto(this.value)">
+    <div id="photo-preview" style="margin-top:8px;display:none">
+      <img id="photo-img" src="" alt="Voorvertoning" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid #333">
+    </div>
+    <label style="margin-top:14px">Video URL <span style="color:#555;font-size:11px">(YouTube embed of directe mp4)</span></label>
+    <input type="url" id="media-video" placeholder="https://www.youtube.com/embed/XXXXXXXXX">
+    <div style="margin-top:14px">
+      <button class="btn btn-gold" onclick="saveMedia()">💾 MEDIA OPSLAAN</button>
+    </div>
+    <div class="msg" id="media-msg"></div>
+  </div>
+
+  <!-- ── BERICHTEN CARD ── -->
+  <div class="card">
+    <h3>📩 Inkomende berichten — Direct contact families</h3>
+    <div class="desc">Berichten die families sturen via het contactformulier op de kaart.</div>
+    <div id="messages-list" style="margin-top:12px"><div style="color:#555;font-size:13px">Laden...</div></div>
+    <div style="margin-top:12px"><button class="btn-outline" onclick="loadMessages()">🔄 Vernieuwen</button></div>
   </div>
 
   <div class="card">
@@ -143,7 +189,7 @@ if(window.location.search.includes('success=true')){
 
 async function loadInfo(){
   const r=await fetch('/api/partner/firm');
-  if(r.status===403){window.location.href='/login';return;}
+  if(r.status===403||r.status===401){window.location.href='/login';return;}
   const d=await r.json();
   if(d.username) document.getElementById('user-name').textContent=d.username;
   if(d.name) document.getElementById('firm-name').value=d.name||'';
@@ -152,9 +198,17 @@ async function loadInfo(){
   document.getElementById('firm-lat').value=d.lat||'';
   document.getElementById('firm-lng').value=d.lng||'';
   document.getElementById('firm-contact').value=d.contact_info||'';
+  document.getElementById('firm-email').value=d.contact_email||'';
   document.getElementById('firm-slots').value=d.total_slots||0;
   document.getElementById('firm-occupied').value=d.occupied_slots||0;
   document.getElementById('firm-ad').value=d.ad_text||'';
+  // Vacature
+  document.getElementById('vac-active').checked=!!d.has_vacancy;
+  document.getElementById('vac-text').value=d.vacancy_text||'';
+  // Media
+  document.getElementById('media-photo').value=d.photo_url||'';
+  document.getElementById('media-video').value=d.video_url||'';
+  if(d.photo_url){previewPhoto(d.photo_url);}
   if(d.is_premium){
     const b=document.getElementById('status-banner');
     b.className='status-banner status-premium';
@@ -162,15 +216,70 @@ async function loadInfo(){
     document.getElementById('btn-premium').disabled=true;
     document.getElementById('btn-premium').style.opacity='.5';
   }
-  // PPC budget
   const st=await fetch('/api/partner/status').then(r=>r.json()).catch(()=>({}));
   const bal=document.getElementById('ppc-balance');
   if(bal) bal.textContent='€ '+(st.ppc_budget!=null?parseFloat(st.ppc_budget).toFixed(2):'0.00');
-  // PPC success notice
   if(window.location.search.includes('ppc_success=true')){
     showMsg('ppc-msg','ok','✅ €50 PPC budget toegevoegd!');
   }
+  loadMessages();
 }
+
+function previewPhoto(url){
+  const prev=document.getElementById('photo-preview');
+  const img=document.getElementById('photo-img');
+  if(url){img.src=url;prev.style.display='block';}
+  else{prev.style.display='none';}
+}
+
+async function saveVacancy(){
+  const has_vacancy=document.getElementById('vac-active').checked;
+  const vacancy_text=document.getElementById('vac-text').value.trim();
+  const r=await fetch('/api/partner/vacancy',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({has_vacancy,vacancy_text})});
+  if(r.ok) showMsg('vac-msg','ok','✅ Vacature instellingen opgeslagen!');
+  else showMsg('vac-msg','err','Fout — zorg dat u eerst bedrijfsgegevens heeft opgeslagen.');
+}
+
+async function saveMedia(){
+  const name=document.getElementById('firm-name').value.trim();
+  const cat=document.getElementById('firm-cat').value;
+  const city=document.getElementById('firm-city').value.trim();
+  const lat=parseFloat(document.getElementById('firm-lat').value);
+  const lng=parseFloat(document.getElementById('firm-lng').value);
+  const contact=document.getElementById('firm-contact').value.trim();
+  const contact_email=document.getElementById('firm-email').value.trim();
+  const total_slots=parseInt(document.getElementById('firm-slots').value)||0;
+  const occupied_slots=parseInt(document.getElementById('firm-occupied').value)||0;
+  const ad_text=document.getElementById('firm-ad').value.trim();
+  const photo_url=document.getElementById('media-photo').value.trim();
+  const video_url=document.getElementById('media-video').value.trim();
+  if(!name||isNaN(lat)||isNaN(lng)){showMsg('media-msg','err','Sla eerst de bedrijfsgegevens op (naam en coördinaten vereist).');return;}
+  const r=await fetch('/api/partner/update',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,cat,city,lat,lng,contact,contact_email,total_slots,occupied_slots,ad_text,photo_url,video_url})});
+  if(r.ok){showMsg('media-msg','ok','✅ Media opgeslagen!');previewPhoto(photo_url);}
+  else showMsg('media-msg','err','Fout bij opslaan.');
+}
+
+async function loadMessages(){
+  const box=document.getElementById('messages-list');
+  try{
+    const msgs=await fetch('/api/partner/messages').then(r=>r.json());
+    if(!Array.isArray(msgs)||!msgs.length){box.innerHTML='<div style="color:#555;font-size:13px;padding:8px 0">Nog geen berichten ontvangen.</div>';return;}
+    box.innerHTML=msgs.map(m=>`
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-weight:700;color:#ffd700;font-size:13px">${esc(m.sender_name)}</span>
+          <span style="color:#555;font-size:11px">${new Date(m.created_at).toLocaleString('nl-NL')}</span>
+        </div>
+        <div style="color:#aaa;font-size:12px;margin-bottom:6px">✉️ <a href="mailto:${esc(m.sender_email)}" style="color:#60a5fa">${esc(m.sender_email)}</a></div>
+        <div style="color:#ddd;font-size:13px;line-height:1.5;white-space:pre-wrap">${esc(m.message)}</div>
+      </div>
+    `).join('');
+  }catch(e){box.innerHTML='<div style="color:#ef4444;font-size:13px">Fout bij laden berichten.</div>';}
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 async function saveFirm(){
   const name=document.getElementById('firm-name').value.trim();
@@ -179,13 +288,16 @@ async function saveFirm(){
   const lat=parseFloat(document.getElementById('firm-lat').value);
   const lng=parseFloat(document.getElementById('firm-lng').value);
   const contact=document.getElementById('firm-contact').value.trim();
+  const contact_email=document.getElementById('firm-email').value.trim();
   const total_slots=parseInt(document.getElementById('firm-slots').value)||0;
   const occupied_slots=parseInt(document.getElementById('firm-occupied').value)||0;
   const ad_text=document.getElementById('firm-ad').value.trim();
+  const photo_url=document.getElementById('media-photo').value.trim();
+  const video_url=document.getElementById('media-video').value.trim();
   if(!name||isNaN(lat)||isNaN(lng)){showMsg('save-msg','err','Naam en coördinaten zijn verplicht.');return;}
   if(lat<50||lat>54||lng<3||lng>8){showMsg('save-msg','err','Coördinaten buiten Nederland.');return;}
   const r=await fetch('/api/partner/update',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name,cat,city,lat,lng,contact,total_slots,occupied_slots,ad_text})});
+    body:JSON.stringify({name,cat,city,lat,lng,contact,contact_email,total_slots,occupied_slots,ad_text,photo_url,video_url})});
   if(r.ok) showMsg('save-msg','ok','✅ Bedrijfsgegevens opgeslagen!');
   else showMsg('save-msg','err','Fout bij opslaan.');
 }

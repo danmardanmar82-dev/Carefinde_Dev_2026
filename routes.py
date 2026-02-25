@@ -120,8 +120,24 @@ def ensure_tables():
                 )
             """)
             cur.execute("""
-                ALTER TABLE companies ADD COLUMN IF NOT EXISTS ppc_budget NUMERIC(10,2) DEFAULT 0
+                CREATE TABLE IF NOT EXISTS contact_messages (
+                    id SERIAL PRIMARY KEY,
+                    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+                    sender_name TEXT,
+                    sender_email TEXT,
+                    message TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
             """)
+            for col_sql in [
+                "ALTER TABLE companies ADD COLUMN IF NOT EXISTS ppc_budget NUMERIC(10,2) DEFAULT 0",
+                "ALTER TABLE companies ADD COLUMN IF NOT EXISTS has_vacancy BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE companies ADD COLUMN IF NOT EXISTS vacancy_text TEXT",
+                "ALTER TABLE companies ADD COLUMN IF NOT EXISTS photo_url TEXT",
+                "ALTER TABLE companies ADD COLUMN IF NOT EXISTS video_url TEXT",
+                "ALTER TABLE companies ADD COLUMN IF NOT EXISTS contact_email TEXT",
+            ]:
+                cur.execute(col_sql)
             cur.execute("""
                 INSERT INTO users (username, password, role)
                 VALUES ('admin', 'admin123', 'admin')
@@ -178,9 +194,24 @@ class FirmData(BaseModel):
     lat: float
     lng: float
     contact: Optional[str] = None
+    contact_email: Optional[str] = None
     total_slots: Optional[int] = 0
     occupied_slots: Optional[int] = 0
     ad_text: Optional[str] = None
+    photo_url: Optional[str] = None
+    video_url: Optional[str] = None
+
+
+class VacancyData(BaseModel):
+    has_vacancy: bool
+    vacancy_text: Optional[str] = None
+
+
+class ContactMessage(BaseModel):
+    company_id: int
+    sender_name: str
+    sender_email: str
+    message: str
 
 
 class AdminFirmUpdate(BaseModel):
@@ -298,7 +329,7 @@ def create_app(static_dir: str) -> FastAPI:
             where.append("city ILIKE %s"); params.append(f"%{city}%")
         if premium_only:
             where.append("is_premium=TRUE")
-        sql = "SELECT id,name,lat,lng,category,city,is_premium,contact_info,total_slots,occupied_slots,ad_text FROM companies"
+        sql = "SELECT id,name,lat,lng,category,city,is_premium,contact_info,contact_email,total_slots,occupied_slots,ad_text,has_vacancy,vacancy_text,photo_url,video_url FROM companies"
         if where:
             sql += " WHERE " + " AND ".join(where)
         sql += " ORDER BY is_premium DESC, name ASC LIMIT %s OFFSET %s"
@@ -340,15 +371,95 @@ def create_app(static_dir: str) -> FastAPI:
                 existing = cur.fetchone()
                 if existing:
                     cur.execute(
-                        "UPDATE companies SET name=%s,category=%s,city=%s,lat=%s,lng=%s,contact_info=%s,total_slots=%s,occupied_slots=%s,ad_text=%s WHERE owner_username=%s",
-                        (data.name, data.cat, data.city, data.lat, data.lng, data.contact, data.total_slots, data.occupied_slots, data.ad_text, sess["username"]),
+                        """UPDATE companies SET name=%s,category=%s,city=%s,lat=%s,lng=%s,
+                           contact_info=%s,contact_email=%s,total_slots=%s,occupied_slots=%s,
+                           ad_text=%s,photo_url=%s,video_url=%s WHERE owner_username=%s""",
+                        (data.name, data.cat, data.city, data.lat, data.lng, data.contact,
+                         data.contact_email, data.total_slots, data.occupied_slots,
+                         data.ad_text, data.photo_url, data.video_url, sess["username"]),
                     )
                 else:
                     cur.execute(
-                        "INSERT INTO companies (name,category,city,lat,lng,contact_info,total_slots,occupied_slots,ad_text,owner_username,is_premium,is_real) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,FALSE,TRUE)",
-                        (data.name, data.cat, data.city, data.lat, data.lng, data.contact, data.total_slots, data.occupied_slots, data.ad_text, sess["username"]),
+                        """INSERT INTO companies (name,category,city,lat,lng,contact_info,contact_email,
+                           total_slots,occupied_slots,ad_text,photo_url,video_url,owner_username,is_premium,is_real)
+                           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,FALSE,TRUE)""",
+                        (data.name, data.cat, data.city, data.lat, data.lng, data.contact,
+                         data.contact_email, data.total_slots, data.occupied_slots,
+                         data.ad_text, data.photo_url, data.video_url, sess["username"]),
                     )
         return {"status": "success"}
+
+    @api.post("/partner/vacancy")
+    def partner_vacancy(data: VacancyData, request: Request):
+        sess = require_session(request)
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE companies SET has_vacancy=%s, vacancy_text=%s WHERE owner_username=%s",
+                    (data.has_vacancy, data.vacancy_text, sess["username"]),
+                )
+        return {"status": "success"}
+
+    @api.post("/contact-message")
+    def send_contact_message(data: ContactMessage):
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM companies WHERE id=%s", (data.company_id,))
+                if not cur.fetchone():
+                    raise HTTPException(status_code=404, detail="Bedrijf niet gevonden")
+                cur.execute(
+                    "INSERT INTO contact_messages (company_id, sender_name, sender_email, message) VALUES (%s,%s,%s,%s)",
+                    (data.company_id, data.sender_name, data.sender_email, data.message),
+                )
+        return {"status": "success"}
+
+    @api.get("/partner/messages")
+    def partner_messages(request: Request):
+        sess = require_session(request)
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM companies WHERE owner_username=%s", (sess["username"],))
+                row = cur.fetchone()
+                if not row:
+                    return []
+                cur.execute(
+                    "SELECT id, sender_name, sender_email, message, created_at FROM contact_messages WHERE company_id=%s ORDER BY created_at DESC LIMIT 50",
+                    (row["id"],),
+                )
+                rows = cur.fetchall()
+        return [dict(r) for r in rows]
+
+    @api.get("/firms/nearby")
+    def firms_nearby(lat: float, lng: float, radius_km: float = 50, limit: int = 200):
+        check_expired_premium()
+        sql = """
+            SELECT id, name, lat, lng, category, city, is_premium, contact_info, contact_email,
+                   total_slots, occupied_slots, ad_text, has_vacancy, vacancy_text, photo_url, video_url,
+                   (6371 * acos(
+                       LEAST(1, cos(radians(%s)) * cos(radians(lat)) *
+                       cos(radians(lng) - radians(%s)) +
+                       sin(radians(%s)) * sin(radians(lat)))
+                   )) AS distance_km
+            FROM companies
+            WHERE lat IS NOT NULL AND lng IS NOT NULL
+            HAVING (6371 * acos(
+                       LEAST(1, cos(radians(%s)) * cos(radians(lat)) *
+                       cos(radians(lng) - radians(%s)) +
+                       sin(radians(%s)) * sin(radians(lat)))
+                   )) <= %s
+            ORDER BY is_premium DESC, distance_km ASC
+            LIMIT %s
+        """
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, (lat, lng, lat, lat, lng, lat, radius_km, limit))
+                rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["distance_km"] = round(float(d["distance_km"]), 1)
+            result.append(d)
+        return result
 
     @api.get("/partner/firm")
     def get_partner_firm(request: Request):
@@ -438,10 +549,10 @@ def create_app(static_dir: str) -> FastAPI:
         return [dict(r) for r in rows]
 
     # ── AI Assistant (Gemini) ─────────────────────────────────────────────────
-    SYSTEM_PROMPT = """Je bent een gespecialiseerde AI-assistent voor Carefinder NL — het toonaangevende platform voor thuiszorg en verzorgingshuizen in Nederland.
+    SYSTEM_PROMPT = """Je bent een gespecialiseerde AI-assistent voor Carefinder NL — het toonaangevende platform voor thuiszorg en verzorgingshuizen in heel Nederland.
 
 Je hebt diepgaande expertise in:
-🏥 THUISZORG: wijkverpleging (ZVW), persoonlijke verzorging, begeleiding thuis, huishoudelijke hulp, respijtzorg, mantelzorgondersteuning
+🏥 THUISZORG: wijkverpleging (ZVW), persoonlijke verzorging, begeleiding thuis, huishoudelijke hulp, respijtzorg, mantelzorgondersteuning, bejaardentehuis, bejaardenhuizen
 🏠 VERPLEEG- EN VERZORGINGSHUIZEN: woonzorgcentra, verpleeghuizen, bejaardentehuis, dementiezorg (ELV), revalidatie, GRZ
 📋 WETGEVING & FINANCIERING: WLZ (Wet langdurige zorg), WMO (Wet maatschappelijke ondersteuning), ZVW (Zorgverzekeringswet), AWBZ-erfenis
 💰 PGB vs. ZIN: persoonsgebonden budget, zorg in natura, zorgkantoor, budgethouder
@@ -451,7 +562,10 @@ Je hebt diepgaande expertise in:
 🔬 KWALITEIT: IGJ-toezicht, Kwaliteitskader Verpleeghuiszorg, cliëntervaringsonderzoek
 👶 SPECIALISATIES: dementiezorg, palliatieve zorg, GGZ, VG-zorg, Niet-aangeboren Hersenletsel
 
-Gebruik de kaart om te wijzen naar aanbieders in de buurt van de gebruiker.
+KAARTINSTRUCTIES: Wanneer je aanbieders noemt of zoekt, geef dan ook aan of de kaart moet navigeren.
+Als de gebruiker vraagt naar aanbieders in de buurt, gebruik dan de beschikbare aanbieders in de context en noem ze bij naam.
+De kaart dekt heel Nederland — van Groningen tot Zeeland.
+
 Geef altijd concrete, empathische en praktische adviezen.
 Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of Duits.
 
@@ -473,22 +587,72 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
         try:
             from google import genai as genai_sdk
             client = genai_sdk.Client(api_key=api_key)
+
+            # ── Pobierz lokalizację użytkownika z kontekstu mapy ──────────────
+            user_lat, user_lng = None, None
+            nearby_firms_list = []
+            if data.context:
+                import re
+                m = re.search(r'Kaartcentrum:\s*([\d.]+),([\d.]+)', data.context)
+                if m:
+                    try:
+                        user_lat = float(m.group(1))
+                        user_lng = float(m.group(2))
+                    except Exception:
+                        pass
+
+            # ── Szukaj firm w promieniu 50 km ─────────────────────────────────
+            if user_lat and user_lng:
+                try:
+                    with get_db() as conn:
+                        with conn.cursor() as cur:
+                            cur.execute("""
+                                SELECT id, name, lat, lng, category, city, is_premium,
+                                       has_vacancy, vacancy_text,
+                                       (6371 * acos(
+                                           LEAST(1, cos(radians(%s)) * cos(radians(lat)) *
+                                           cos(radians(lng) - radians(%s)) +
+                                           sin(radians(%s)) * sin(radians(lat)))
+                                       )) AS dist
+                                FROM companies
+                                WHERE lat IS NOT NULL AND lng IS NOT NULL
+                                HAVING (6371 * acos(
+                                           LEAST(1, cos(radians(%s)) * cos(radians(lat)) *
+                                           cos(radians(lng) - radians(%s)) +
+                                           sin(radians(%s)) * sin(radians(lat)))
+                                       )) <= 50
+                                ORDER BY is_premium DESC, dist ASC
+                                LIMIT 20
+                            """, (user_lat, user_lng, user_lat, user_lat, user_lng, user_lat))
+                            rows = cur.fetchall()
+                    nearby_firms_list = [dict(r) for r in rows]
+                except Exception:
+                    pass
+
+            # ── Buduj prompt ──────────────────────────────────────────────────
             prompt = SYSTEM_PROMPT
             if data.context:
                 prompt += f"\n\nHuidige kaartcontext: {data.context}"
+            if nearby_firms_list:
+                firms_desc = "; ".join(
+                    f"{r['name']} ({r['category']}, {r.get('city','?')}{' ⭐' if r.get('is_premium') else ''}{' 🔔vacature' if r.get('has_vacancy') else ''})"
+                    for r in nearby_firms_list
+                )
+                prompt += f"\n\nAanbieders binnen 50 km van gebruiker: {firms_desc}"
             prompt += f"\n\nGebruikersvraag: {data.message}"
+
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
             )
             reply = response.text
 
-            # ── Map action: zoek stad of firma in DB ──────────────────────────
+            # ── Nawigacja mapy ────────────────────────────────────────────────
             map_lat, map_lng, map_label, map_zoom = None, None, None, 13
+            map_firms = []
             try:
                 with get_db() as conn:
                     with conn.cursor() as cur:
-                        # Zoek op naam van firma
                         cur.execute(
                             "SELECT name, lat, lng, city FROM companies WHERE name ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
                             (f"%{data.message}%",)
@@ -497,7 +661,6 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
                         if row:
                             map_lat, map_lng, map_label, map_zoom = row["lat"], row["lng"], row["name"], 15
                         else:
-                            # Zoek op stad
                             cur.execute(
                                 "SELECT name, lat, lng, city FROM companies WHERE city ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
                                 (f"%{data.message}%",)
@@ -508,12 +671,29 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
             except Exception:
                 pass
 
+            # ── Pokaż pobliskie firmy na mapie gdy pytanie o "buurt" ──────────
+            nearby_keywords = ["buurt", "omgeving", "nearby", "dichtbij", "dichtstbijzijnde", "in de buurt", "naast mij"]
+            if any(kw in data.message.lower() for kw in nearby_keywords) and nearby_firms_list:
+                map_firms = [
+                    {"id": r["id"], "name": r["name"], "lat": r["lat"], "lng": r["lng"],
+                     "category": r["category"], "city": r.get("city",""), "is_premium": r.get("is_premium", False),
+                     "has_vacancy": r.get("has_vacancy", False), "distance_km": round(float(r.get("dist",0)), 1)}
+                    for r in nearby_firms_list if r.get("lat") and r.get("lng")
+                ]
+                if not map_lat and map_firms:
+                    map_lat = user_lat
+                    map_lng = user_lng
+                    map_zoom = 11
+                    map_label = "Aanbieders in uw buurt"
+
             result = {"reply": reply}
             if map_lat and map_lng:
                 result["map_lat"] = map_lat
                 result["map_lng"] = map_lng
                 result["map_zoom"] = map_zoom
                 result["map_label"] = map_label
+            if map_firms:
+                result["map_firms"] = map_firms
             return result
         except Exception as e:
             return {"reply": f"AI tijdelijk niet beschikbaar. ({str(e)[:120]})"}
