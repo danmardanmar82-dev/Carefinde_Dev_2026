@@ -548,6 +548,23 @@ def create_app(static_dir: str) -> FastAPI:
                 rows = cur.fetchall()
         return [dict(r) for r in rows]
 
+    @api.post("/forgot-password")
+    def forgot_password(data: LoginData):
+        """Reset wachtwoord naar tijdelijk wachtwoord. Geen email vereist."""
+        new_pass = secrets.token_urlsafe(8)  # bijv. "aB3xF7qR"
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE username=%s", (data.username,))
+                user = cur.fetchone()
+                if not user:
+                    # Geef geen info of gebruiker bestaat (security)
+                    return {"status": "sent"}
+                cur.execute(
+                    "UPDATE users SET password=%s WHERE username=%s",
+                    (new_pass, data.username),
+                )
+        return {"status": "reset", "temp_password": new_pass}
+
     # ── AI Assistant (Gemini) ─────────────────────────────────────────────────
     SYSTEM_PROMPT = """Je bent een gespecialiseerde AI-assistent voor Carefinder NL — het toonaangevende platform voor thuiszorg en verzorgingshuizen in heel Nederland.
 

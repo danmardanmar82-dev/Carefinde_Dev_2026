@@ -26,6 +26,21 @@ input:focus{border-color:#ffd700}
 .back-link{margin-top:20px;text-align:center;font-size:13px;color:#555}
 .back-link a{color:#ffd700;text-decoration:none}
 .back-link a:hover{text-decoration:underline}
+.forgot-link{margin-top:12px;text-align:right;font-size:12px}
+.forgot-link a{color:#555;text-decoration:none;cursor:pointer}
+.forgot-link a:hover{color:#ffd700}
+/* Modal */
+#modal-forgot{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center}
+#modal-forgot.open{display:flex}
+.modal-box{background:#111;border:1px solid #333;border-radius:14px;padding:32px 36px;width:100%;max-width:400px;position:relative}
+.modal-box h3{font-size:17px;font-weight:800;color:#ffd700;margin-bottom:8px}
+.modal-box p{font-size:13px;color:#666;margin-bottom:18px;line-height:1.5}
+.modal-close{position:absolute;top:14px;right:18px;background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1}
+.modal-close:hover{color:#ffd700}
+.temp-pass-box{background:#1a1a1a;border:1px solid #ffd700;border-radius:8px;padding:14px 16px;margin-top:14px;text-align:center}
+.temp-pass-box .label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.temp-pass-box .pass{font-size:22px;font-weight:900;color:#ffd700;letter-spacing:3px;font-family:monospace}
+.temp-pass-box .hint{font-size:11px;color:#555;margin-top:8px;line-height:1.4}
 </style>
 </head>
 <body>
@@ -45,6 +60,7 @@ input:focus{border-color:#ffd700}
     <input type="text" id="l-user" placeholder="Gebruikersnaam" autocomplete="username">
     <label for="l-pass">Wachtwoord</label>
     <input type="password" id="l-pass" placeholder="Wachtwoord" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="forgot-link"><a onclick="openForgot()">Wachtwoord vergeten?</a></div>
     <button class="btn btn-submit" onclick="doLogin()">INLOGGEN</button>
     <div class="msg" id="login-msg"></div>
   </div>
@@ -62,6 +78,33 @@ input:focus{border-color:#ffd700}
   </div>
 
   <div class="back-link"><a href="/">← Terug naar de kaart</a></div>
+</div>
+
+<!-- Modal: Wachtwoord vergeten -->
+<div id="modal-forgot" onclick="if(event.target===this)closeForgot()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeForgot()">×</button>
+    <h3>🔑 Wachtwoord vergeten</h3>
+    <p>Voer uw gebruikersnaam in. U ontvangt een tijdelijk wachtwoord dat u daarna kunt wijzigen in uw dashboard.</p>
+
+    <!-- Stap 1: invoer gebruikersnaam -->
+    <div id="forgot-step1">
+      <label for="forgot-user">Gebruikersnaam</label>
+      <input type="text" id="forgot-user" placeholder="Uw gebruikersnaam" autocomplete="username" onkeydown="if(event.key==='Enter')doForgot()">
+      <button class="btn btn-submit" onclick="doForgot()" style="margin-top:16px">TIJDELIJK WACHTWOORD AANVRAGEN</button>
+      <div class="msg" id="forgot-msg"></div>
+    </div>
+
+    <!-- Stap 2: toon tijdelijk wachtwoord -->
+    <div id="forgot-step2" style="display:none">
+      <div class="temp-pass-box">
+        <div class="label">Uw tijdelijk wachtwoord</div>
+        <div class="pass" id="forgot-temp-pass">–</div>
+        <div class="hint">Noteer dit wachtwoord. Log in en wijzig het daarna direct via uw dashboard.</div>
+      </div>
+      <button class="btn btn-submit" onclick="closeForgot();switchTab('login')" style="margin-top:18px">INLOGGEN MET TIJDELIJK WACHTWOORD</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -93,6 +136,43 @@ async function doLogin(){
       showMsg('login-msg','err', d.detail||'Foutieve inloggegevens.');
     }
   }catch(e){showMsg('login-msg','err','Verbindingsfout.');}
+}
+
+function openForgot(){
+  const u = document.getElementById('l-user').value.trim();
+  if(u) document.getElementById('forgot-user').value = u;
+  document.getElementById('forgot-step1').style.display='block';
+  document.getElementById('forgot-step2').style.display='none';
+  document.getElementById('forgot-msg').style.display='none';
+  document.getElementById('modal-forgot').classList.add('open');
+}
+
+function closeForgot(){
+  document.getElementById('modal-forgot').classList.remove('open');
+}
+
+async function doForgot(){
+  const u = document.getElementById('forgot-user').value.trim();
+  if(!u){showMsg('forgot-msg','err','Vul uw gebruikersnaam in.');return;}
+  try{
+    const r = await fetch('/api/forgot-password',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:u, password:''})
+    });
+    const d = await r.json();
+    if(r.ok && d.temp_password){
+      document.getElementById('forgot-temp-pass').textContent = d.temp_password;
+      document.getElementById('forgot-step1').style.display='none';
+      document.getElementById('forgot-step2').style.display='block';
+      // Pre-fill login form
+      document.getElementById('l-user').value = u;
+      document.getElementById('l-pass').value = d.temp_password;
+    } else {
+      // Gebruiker niet gevonden — geef neutrale melding (security)
+      showMsg('forgot-msg','ok','Als dit account bestaat, is het wachtwoord gereset. Neem contact op met info@carefinder.nl als u geen toegang krijgt.');
+    }
+  }catch(e){showMsg('forgot-msg','err','Verbindingsfout.');}
 }
 
 async function doRegister(){
