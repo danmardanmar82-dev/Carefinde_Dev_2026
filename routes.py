@@ -664,33 +664,127 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
             )
             reply = response.text
 
-            # ── Nawigacja mapy ────────────────────────────────────────────────
-            map_lat, map_lng, map_label, map_zoom = None, None, None, 13
+            # ── Słownik holenderskich miast z koordynatami ────────────────────
+            NL_CITIES = {
+                "amsterdam": (52.3676, 4.9041), "rotterdam": (51.9225, 4.4792),
+                "den haag": (52.0705, 4.3007), "'s-gravenhage": (52.0705, 4.3007),
+                "utrecht": (52.0907, 5.1214), "eindhoven": (51.4416, 5.4697),
+                "tilburg": (51.5555, 5.0913), "groningen": (53.2194, 6.5665),
+                "almere": (52.3508, 5.2647), "breda": (51.5719, 4.7683),
+                "nijmegen": (51.8126, 5.8372), "enschede": (52.2215, 6.8937),
+                "haarlem": (52.3874, 4.6462), "arnhem": (51.9851, 5.8987),
+                "zaanstad": (52.4560, 4.8187), "amersfoort": (52.1561, 5.3878),
+                "apeldoorn": (52.2112, 5.9699), "s-hertogenbosch": (51.6978, 5.3037),
+                "'s-hertogenbosch": (51.6978, 5.3037), "den bosch": (51.6978, 5.3037),
+                "hoofddorp": (52.3025, 4.6937), "maastricht": (50.8514, 5.6910),
+                "leiden": (52.1601, 4.4970), "dordrecht": (51.8133, 4.6901),
+                "zoetermeer": (52.0574, 4.4940), "zwolle": (52.5168, 6.0830),
+                "deventer": (52.2550, 6.1550), "delft": (52.0116, 4.3571),
+                "alkmaar": (52.6325, 4.7500), "emmen": (52.7791, 6.8934),
+                "venlo": (51.3704, 6.1724), "leeuwarden": (53.2012, 5.7999),
+                "hilversum": (52.2294, 5.1697), "heerlen": (50.8879, 5.9798),
+                "purmerend": (52.5026, 4.9584), "oss": (51.7699, 5.5186),
+                "roosendaal": (51.5311, 4.4583), "helmond": (51.4820, 5.6575),
+                "hengelo": (52.2658, 6.7932), "schiedam": (51.9186, 4.3986),
+                "drachten": (53.1079, 6.0987), "spijkenisse": (51.8449, 4.3292),
+                "gouda": (52.0116, 4.7097), "ede": (52.0444, 5.6597),
+                "lelystad": (52.5185, 5.4714), "hoorn": (52.6424, 5.0602),
+                "alphen": (52.1289, 4.6614), "alphen aan den rijn": (52.1289, 4.6614),
+                "zeist": (52.0891, 5.2337), "middelburg": (51.4988, 3.6136),
+                "vlissingen": (51.4426, 3.5714), "sittard": (51.0027, 5.8695),
+                "geleen": (50.9724, 5.8275), "kerkrade": (50.8659, 6.0658),
+                "venray": (51.5271, 5.9756), "weert": (51.2513, 5.7078),
+                "roermond": (51.1942, 5.9874), "den helder": (52.9581, 4.7597),
+                "delfzijl": (53.3244, 6.9166), "veendam": (53.1081, 6.8773),
+                "assen": (52.9929, 6.5642), "hoogeveen": (52.7284, 6.4775),
+                "meppel": (52.6961, 6.1941), "kampen": (52.5561, 5.9111),
+                "harderwijk": (52.3455, 5.6180), "doetinchem": (51.9662, 6.2964),
+                "winterswijk": (51.9757, 6.7188), "tiel": (51.8879, 5.4271),
+                "culemborg": (51.9541, 5.2285), "wageningen": (51.9693, 5.6658),
+                "nieuwegein": (52.0276, 5.0862), "IJsselstein": (52.0158, 5.0244),
+                "woerden": (52.0880, 4.8820), "soest": (52.1758, 5.2987),
+            }
+
+            def find_city_in_text(text: str):
+                """Zoek Nederlandse stad in tekst, return (lat, lng, stadsnaam) of None."""
+                text_lower = text.lower()
+                # Sorteer op lengte (langste naam eerst, bijv. "den haag" voor "haag")
+                for city_name in sorted(NL_CITIES.keys(), key=len, reverse=True):
+                    if city_name in text_lower:
+                        lat, lng = NL_CITIES[city_name]
+                        return lat, lng, city_name.title()
+                return None
+
+            # ── Navigatie: eerst bericht, dan AI-antwoord, dan DB ────────────
+            map_lat, map_lng, map_label, map_zoom = None, None, None, 12
             map_firms = []
-            try:
-                with get_db() as conn:
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            "SELECT name, lat, lng, city FROM companies WHERE name ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
-                            (f"%{data.message}%",)
-                        )
-                        row = cur.fetchone()
-                        if row:
-                            map_lat, map_lng, map_label, map_zoom = row["lat"], row["lng"], row["name"], 15
-                        else:
+
+            # 1) Zoek stad in de vraag van gebruiker
+            city_hit = find_city_in_text(data.message)
+            if city_hit:
+                map_lat, map_lng, map_label = city_hit
+                map_zoom = 12
+            else:
+                # 2) Zoek stad in het AI-antwoord
+                city_hit = find_city_in_text(reply)
+                if city_hit:
+                    map_lat, map_lng, map_label = city_hit
+                    map_zoom = 12
+
+            # 3) Als stad gevonden — zoek ook firms in DB in die stad/regio
+            if map_lat and map_lng:
+                try:
+                    with get_db() as conn:
+                        with conn.cursor() as cur:
+                            # Zoek firma's in die stad (25 km radius)
+                            cur.execute("""
+                                SELECT id, name, lat, lng, category, city, is_premium,
+                                       has_vacancy, vacancy_text,
+                                       (6371 * acos(
+                                           LEAST(1, cos(radians(%s)) * cos(radians(lat)) *
+                                           cos(radians(lng) - radians(%s)) +
+                                           sin(radians(%s)) * sin(radians(lat)))
+                                       )) AS dist
+                                FROM companies
+                                WHERE lat IS NOT NULL AND lng IS NOT NULL
+                                HAVING (6371 * acos(
+                                           LEAST(1, cos(radians(%s)) * cos(radians(lat)) *
+                                           cos(radians(lng) - radians(%s)) +
+                                           sin(radians(%s)) * sin(radians(lat)))
+                                       )) <= 30
+                                ORDER BY is_premium DESC, dist ASC
+                                LIMIT 30
+                            """, (map_lat, map_lng, map_lat, map_lat, map_lng, map_lat))
+                            city_firms = cur.fetchall()
+                    if city_firms:
+                        map_firms = [
+                            {"id": r["id"], "name": r["name"], "lat": r["lat"], "lng": r["lng"],
+                             "category": r["category"], "city": r.get("city",""),
+                             "is_premium": r.get("is_premium", False),
+                             "has_vacancy": r.get("has_vacancy", False),
+                             "distance_km": round(float(r.get("dist",0)), 1)}
+                            for r in city_firms if r.get("lat") and r.get("lng")
+                        ]
+                except Exception:
+                    pass
+            else:
+                # 4) Fallback: zoek op naam firma in DB
+                try:
+                    with get_db() as conn:
+                        with conn.cursor() as cur:
                             cur.execute(
-                                "SELECT name, lat, lng, city FROM companies WHERE city ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
+                                "SELECT name, lat, lng, city FROM companies WHERE name ILIKE %s AND lat IS NOT NULL ORDER BY is_premium DESC LIMIT 1",
                                 (f"%{data.message}%",)
                             )
                             row = cur.fetchone()
                             if row:
-                                map_lat, map_lng, map_label, map_zoom = row["lat"], row["lng"], row["city"], 12
-            except Exception:
-                pass
+                                map_lat, map_lng, map_label, map_zoom = row["lat"], row["lng"], row["name"], 15
+                except Exception:
+                    pass
 
-            # ── Pokaż pobliskie firmy na mapie gdy pytanie o "buurt" ──────────
+            # ── Pokaż pobliskie firmy op kaart bij "buurt" vraag ─────────────
             nearby_keywords = ["buurt", "omgeving", "nearby", "dichtbij", "dichtstbijzijnde", "in de buurt", "naast mij"]
-            if any(kw in data.message.lower() for kw in nearby_keywords) and nearby_firms_list:
+            if any(kw in data.message.lower() for kw in nearby_keywords) and nearby_firms_list and not map_firms:
                 map_firms = [
                     {"id": r["id"], "name": r["name"], "lat": r["lat"], "lng": r["lng"],
                      "category": r["category"], "city": r.get("city",""), "is_premium": r.get("is_premium", False),
