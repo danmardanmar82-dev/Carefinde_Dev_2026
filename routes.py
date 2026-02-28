@@ -707,10 +707,13 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
 
             def find_city_in_text(text: str):
                 """Zoek Nederlandse stad in tekst, return (lat, lng, stadsnaam) of None."""
+                import re
                 text_lower = text.lower()
                 # Sorteer op lengte (langste naam eerst, bijv. "den haag" voor "haag")
                 for city_name in sorted(NL_CITIES.keys(), key=len, reverse=True):
-                    if city_name in text_lower:
+                    # Gebruik word-boundary regex om te voorkomen dat bijv. "Ede" in "aanbieders" matcht
+                    pattern = r'\b' + re.escape(city_name) + r'\b'
+                    if re.search(pattern, text_lower):
                         lat, lng = NL_CITIES[city_name]
                         return lat, lng, city_name.title()
                 return None
