@@ -506,7 +506,14 @@ async function startPpcTopup() {
 /* ── AI CHAT ── */
 function toggleAI() {
   const w = document.getElementById('ai-window');
-  w.style.display = w.style.display === 'flex' ? 'none' : 'flex';
+  if (w.style.display === 'flex') {
+    // Sluiten: verberg venster en wis chatgeschiedenis
+    w.style.display = 'none';
+    document.getElementById('ai-messages').innerHTML = '';
+    document.getElementById('ai-input').value = '';
+  } else {
+    w.style.display = 'flex';
+  }
 }
 
 async function sendAI() {
