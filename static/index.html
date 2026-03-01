@@ -88,6 +88,8 @@ footer a:hover{color:var(--gold)}
   .sidebar-btn{width:calc(50% - 4px);margin:2px}
   .stats-box,.search-box,.filter-label{width:100%}
 }
+.marker-tooltip-basic{background:#fff;border:1px solid #ddd;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:700;color:#333;box-shadow:0 2px 6px rgba(0,0,0,.12);white-space:nowrap}
+.marker-tooltip-basic::before{display:none}
 </style>
 </head>
 <body>
@@ -337,11 +339,15 @@ function renderMarkers(firms) {
       icon: makeIcon(f.is_premium, f.category, f.has_vacancy),
       isPremium: !!f.is_premium
     });
-    marker.bindPopup(buildPopup(f), {maxWidth: 290});
-    if (f.id) {
-      marker.on('click', () => {
-        fetch(`/api/firms/${f.id}/click`, {method: 'POST'}).catch(()=>{});
-      });
+    if (f.is_premium) {
+      marker.bindPopup(buildPopup(f), {maxWidth: 290});
+      if (f.id) {
+        marker.on('click', () => {
+          fetch(`/api/firms/${f.id}/click`, {method: 'POST'}).catch(()=>{});
+        });
+      }
+    } else {
+      marker.bindTooltip(esc(f.name), {permanent: false, direction: 'top', className: 'marker-tooltip-basic'});
     }
     cluster.addLayer(marker);
   });
@@ -598,6 +604,10 @@ function setLang(l) {
 /* ── PREMIUM AUTO-MONITOR ── */
 // Refresh markers every 5 minutes to pick up premium status changes
 setInterval(() => loadFirms(activeFilter), 5 * 60 * 1000);
+
+/* ── KEEP-ALIVE ── */
+// Ping server every 10 min zodat Render niet in slaap valt
+setInterval(() => fetch('/api/health').catch(()=>{}), 10 * 60 * 1000);
 
 /* ── INIT ── */
 loadFirms(null);
