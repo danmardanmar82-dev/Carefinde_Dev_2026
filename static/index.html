@@ -167,11 +167,12 @@ footer a:hover{color:var(--gold)}
 <div id="ai-window">
   <div id="ai-header">
     <span>🏥 CAREFINDER AI ASSISTENT</span>
-    <span onclick="toggleAI()" style="cursor:pointer;font-size:18px">×</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span onclick="clearAIChat()" title="Nieuwe gesprek" style="cursor:pointer;font-size:13px;opacity:.8;font-weight:600">🗑 Wis</span>
+      <span onclick="toggleAI()" style="cursor:pointer;font-size:18px">×</span>
+    </div>
   </div>
-  <div id="ai-messages">
-    <div class="msg-ai" id="t-ai-welcome">Hallo! Ik ben de Carefinder AI-assistent, gespecialiseerd in thuiszorg en verzorgingshuizen in Nederland. Stel mij vragen over indicaties, vergoedingen of zorgaanbieders. 🇳🇱</div>
-  </div>
+  <div id="ai-messages"></div>
   <div id="ai-input-row">
     <input type="text" id="ai-input" placeholder="Uw vraag..." onkeydown="if(event.key==='Enter')sendAI()">
     <button id="ai-send" onclick="sendAI()">➤</button>
@@ -504,14 +505,20 @@ async function startPpcTopup() {
 }
 
 /* ── AI CHAT ── */
+const AI_WELCOME = `<div class="msg-ai" id="t-ai-welcome">Hallo! Ik ben de Carefinder AI-assistent, gespecialiseerd in thuiszorg en verzorgingshuizen in Nederland. Stel mij vragen over indicaties, vergoedingen of zorgaanbieders. 🇳🇱</div>`;
+
+function clearAIChat() {
+  document.getElementById('ai-messages').innerHTML = AI_WELCOME;
+  document.getElementById('ai-input').value = '';
+}
+
 function toggleAI() {
   const w = document.getElementById('ai-window');
   if (w.style.display === 'flex') {
-    // Sluiten: verberg venster en wis chatgeschiedenis
     w.style.display = 'none';
-    document.getElementById('ai-messages').innerHTML = '';
-    document.getElementById('ai-input').value = '';
   } else {
+    // Nieuw gesprek bij elke opening
+    clearAIChat();
     w.style.display = 'flex';
   }
 }
