@@ -252,16 +252,15 @@ function buildPopup(f) {
 
   if (!f.is_premium) {
     return `<div class="popup-inner">
-      ${vacBadge}${vacText}
       <div class="popup-name">${esc(f.name)}</div>
       <div class="popup-cat">${cat}${city}</div>
       <div style="font-size:11px;color:#aaa;font-style:italic;margin-top:6px">Contactgegevens beschikbaar bij Premium ⭐</div>
-      ${buildContactForm(f.id, f.name)}
     </div>`;
   }
   // Premium popup
+  const rawPhone = f.contact_info ? f.contact_info.replace(/\s+/g,'') : '';
   const contact = f.contact_info
-    ? `<div class="popup-contact">📞 ${esc(f.contact_info)}</div>`
+    ? `<div class="popup-contact">📞 <a href="tel:${esc(rawPhone)}" style="color:#1a6cff;font-weight:700;text-decoration:none">${esc(f.contact_info)}</a></div>`
     : '';
   let slots = '';
   if (f.total_slots > 0) {
