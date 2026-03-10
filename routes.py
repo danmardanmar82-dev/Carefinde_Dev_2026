@@ -544,7 +544,7 @@ def create_app(static_dir: str) -> FastAPI:
                     (data.name.strip(), data.category, data.city.strip(), data.lat, data.lng, data.contact_info)
                 )
                 row = cur.fetchone()
-        return {"status": "success", "id": row[0]}
+        return {"status": "success", "id": row["id"]}
 
     @api.post("/admin/reset-premium")
     def admin_reset_premium(request: Request):
