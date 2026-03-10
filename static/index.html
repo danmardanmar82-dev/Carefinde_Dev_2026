@@ -595,7 +595,7 @@ setInterval(() => { if(typeof loadFirms==='function' && map) loadFirms(activeFil
 setInterval(() => fetch('/api/health').catch(()=>{}), 10 * 60 * 1000);
 </script>
 <script async defer
-  src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&callback=initMap&loading=async">
+  src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&callback=initMap">
 </script>
 </body>
 </html>
