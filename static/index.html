@@ -196,7 +196,6 @@ function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
     center: {lat: 52.37, lng: 5.30},
     zoom: 8,
-    mapId: 'carefinder_map',
     restriction: {latLngBounds:{north:54.0,south:49.5,west:2.0,east:8.0}, strictBounds:false},
     streetViewControl: false,
     mapTypeControl: false,
@@ -204,39 +203,28 @@ function initMap() {
     gestureHandling: 'greedy',
   });
   infoWindow = new google.maps.InfoWindow({maxWidth: 300});
-  clusterer = new markerClusterer.MarkerClusterer({
-    map,
-    renderer: {
-      render({count, position, markers}) {
-        const hasPremium = (markers||[]).some(m => m._isPremium);
-        const bg = hasPremium ? '#ffd700' : '#3b82f6';
-        const fg = hasPremium ? '#7a5800' : '#fff';
-        const el = document.createElement('div');
-        el.style.cssText = `width:36px;height:36px;background:${bg};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:${fg};box-shadow:0 2px 8px rgba(0,0,0,.35);border:2px solid #fff;cursor:pointer`;
-        el.textContent = count;
-        return new google.maps.marker.AdvancedMarkerElement({position, content: el, zIndex: 1});
-      }
-    }
-  });
+  clusterer = new markerClusterer.MarkerClusterer({map});
   loadFirms(null);
   loadStats();
   initGeoLocation();
 }
 
 /* ── ICONS ── */
-function makeMarkerEl(isPremium, cat, hasVacancy) {
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:relative;cursor:pointer';
+function makeIcon(isPremium, cat, hasVacancy) {
   if (isPremium) {
-    wrap.innerHTML = `<div style="width:22px;height:22px;background:#ffd700;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #b8860b;box-shadow:0 0 10px rgba(255,215,0,.8)"></div>
-      <div style="position:absolute;top:3px;left:3px;width:10px;height:10px;background:#fff;border-radius:50%;transform:rotate(45deg)"></div>
-      ${hasVacancy ? '<div style="position:absolute;top:-9px;right:-12px;background:#f97316;color:#fff;font-size:8px;font-weight:900;padding:1px 4px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)">VACATURE</div>' : ''}`;
-  } else {
-    const color = cat === 'thuiszorg' ? '#22c55e' : '#3b82f6';
-    wrap.innerHTML = `<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px ${color}99"></div>
-      ${hasVacancy ? '<div style="position:absolute;top:-9px;right:-12px;background:#f97316;color:#fff;font-size:8px;font-weight:900;padding:1px 4px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)">VACATURE</div>' : ''}`;
+    // Gouden diamant pin
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+      <path d="M14 0 C14 0 0 12 0 20 C0 28 6 34 14 36 C22 34 28 28 28 20 C28 12 14 0 14 0Z" fill="#ffd700" stroke="#b8860b" stroke-width="1.5"/>
+      <circle cx="14" cy="20" r="5" fill="white" opacity="0.9"/>
+      ${hasVacancy ? '<rect x="14" y="-2" width="30" height="11" rx="5" fill="#f97316"/><text x="29" y="8" font-family="Arial" font-size="7" font-weight="900" fill="white" text-anchor="middle">VACATURE</text>' : ''}
+    </svg>`;
+    return {url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: new google.maps.Size(28, 36), anchor: new google.maps.Point(14, 36)};
   }
-  return wrap;
+  const color = cat === 'thuiszorg' ? '%2322c55e' : '%233b82f6';
+  const stroke = cat === 'thuiszorg' ? '%23166534' : '%231e40af';
+  const vac = hasVacancy ? `<rect x="8" y="-2" width="30" height="11" rx="5" fill="%23f97316"/><text x="23" y="8" font-family="Arial" font-size="7" font-weight="900" fill="white" text-anchor="middle">VACATURE</text>` : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="${color}" stroke="${stroke}" stroke-width="2"/>${vac}</svg>`;
+  return {url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: new google.maps.Size(18, 18), anchor: new google.maps.Point(9, 9)};
 }
 
 /* ── POPUP BUILDER ── */
@@ -330,35 +318,29 @@ async function sendContact(companyId) {
 
 /* ── RENDER MARKERS ── */
 function renderMarkers(firms) {
-  // Remove old markers
-  gmMarkers.forEach(m => m.map = null);
+  gmMarkers.forEach(m => m.setMap(null));
   gmMarkers = [];
   clusterer.clearMarkers();
 
   const newMarkers = [];
   firms.forEach(f => {
     if (!f.lat || !f.lng) return;
-    const el = makeMarkerEl(f.is_premium, f.category, f.has_vacancy);
-    const marker = new google.maps.marker.AdvancedMarkerElement({
+    const marker = new google.maps.Marker({
       position: {lat: parseFloat(f.lat), lng: parseFloat(f.lng)},
-      content: el,
+      icon: makeIcon(f.is_premium, f.category, f.has_vacancy),
       title: f.name,
-      map: null,
+      optimized: false,
     });
     marker._isPremium = !!f.is_premium;
 
     if (f.is_premium) {
       marker.addListener('click', () => {
         infoWindow.setContent(`<div style="min-width:220px">${buildPopup(f)}</div>`);
-        infoWindow.open({anchor: marker, map});
+        infoWindow.open(map, marker);
         if (f.id) fetch(`/api/firms/${f.id}/click`, {method:'POST'}).catch(()=>{});
       });
-    } else {
-      // tooltip on hover via title — naam alleen zichtbaar als Google tooltip
-      el.addEventListener('mouseenter', () => {
-        el.setAttribute('title', esc(f.name));
-      });
     }
+    // non-premium: alleen naam via native browser title tooltip
     gmMarkers.push(marker);
     newMarkers.push(marker);
   });
@@ -613,7 +595,7 @@ setInterval(() => { if(typeof loadFirms==='function' && map) loadFirms(activeFil
 setInterval(() => fetch('/api/health').catch(()=>{}), 10 * 60 * 1000);
 </script>
 <script async defer
-  src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&libraries=marker&callback=initMap&loading=async">
+  src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&callback=initMap&loading=async">
 </script>
 </body>
 </html>
