@@ -219,6 +219,14 @@ class AdminFirmUpdate(BaseModel):
     is_premium: Optional[int] = None
     premium_expiry: Optional[str] = None
 
+class AdminAddFirm(BaseModel):
+    name: str
+    category: str = "verzorgingshuis"
+    city: str = ""
+    lat: float
+    lng: float
+    contact_info: str = ""
+
 
 # ─── File hash ────────────────────────────────────────────────────────────────
 def get_file_hash(filepath: str) -> str:
@@ -524,6 +532,19 @@ def create_app(static_dir: str) -> FastAPI:
                         (bool(data.is_premium), expiry, data.company_id),
                     )
         return {"status": "success"}
+
+    @api.post("/admin/add_firm")
+    def admin_add_firm(data: AdminAddFirm, request: Request):
+        require_admin(request)
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO companies (name,category,city,lat,lng,contact_info,is_premium,is_real,has_vacancy)
+                       VALUES (%s,%s,%s,%s,%s,%s,FALSE,TRUE,FALSE) RETURNING id""",
+                    (data.name.strip(), data.category, data.city.strip(), data.lat, data.lng, data.contact_info)
+                )
+                row = cur.fetchone()
+        return {"status": "success", "id": row[0]}
 
     @api.post("/admin/reset-premium")
     def admin_reset_premium(request: Request):

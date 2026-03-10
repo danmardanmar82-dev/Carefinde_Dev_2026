@@ -76,7 +76,13 @@ select option{background:#1a1a1a}
     <label>Stad</label>
     <input type="text" id="firm-city" placeholder="Bijv. Amsterdam">
 
-    <div class="row2">
+    <label>Adres <span style="color:#555;font-size:11px">(voor automatische locatie op kaart)</span></label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="firm-address" placeholder="bijv. Dorpstraat 10, Amsterdam" style="flex:1">
+      <button class="btn-outline" onclick="geocodeAddress()" style="white-space:nowrap;padding:8px 12px">📍 Zoek locatie</button>
+    </div>
+    <div id="geocode-msg" style="font-size:11px;margin-top:4px;display:none"></div>
+    <div class="row2" style="margin-top:8px">
       <div>
         <label>Latitude</label>
         <input type="number" id="firm-lat" step="0.0001" placeholder="bijv. 52.3676">
@@ -86,7 +92,7 @@ select option{background:#1a1a1a}
         <input type="number" id="firm-lng" step="0.0001" placeholder="bijv. 4.9041">
       </div>
     </div>
-    <div style="margin-top:10px">
+    <div style="margin-top:6px">
       <button class="btn-outline" onclick="getMyLocation()">📍 Gebruik mijn locatie</button>
     </div>
 
@@ -332,6 +338,29 @@ function getMyLocation(){
     document.getElementById('firm-lat').value=p.coords.latitude.toFixed(6);
     document.getElementById('firm-lng').value=p.coords.longitude.toFixed(6);
   });
+}
+
+async function geocodeAddress(){
+  const addr = document.getElementById('firm-address').value.trim();
+  const city = document.getElementById('firm-city').value.trim();
+  const query = addr || city;
+  const msg = document.getElementById('geocode-msg');
+  if(!query){msg.textContent='Vul een adres of stad in.';msg.style.color='#dc2626';msg.style.display='block';return;}
+  msg.textContent='Zoeken...';msg.style.color='#6b7280';msg.style.display='block';
+  try {
+    const q = encodeURIComponent((addr?addr+', ':'')+' Nederland');
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=nl`,
+      {headers:{'User-Agent':'CarefinderNL/1.0'}});
+    const d = await r.json();
+    if(d&&d.length){
+      document.getElementById('firm-lat').value=parseFloat(d[0].lat).toFixed(6);
+      document.getElementById('firm-lng').value=parseFloat(d[0].lon).toFixed(6);
+      msg.textContent='✅ Locatie gevonden: '+d[0].display_name.split(',').slice(0,3).join(',');
+      msg.style.color='#16a34a';
+    } else {
+      msg.textContent='Adres niet gevonden. Probeer stad + straat.';msg.style.color='#dc2626';
+    }
+  } catch(e){msg.textContent='Fout bij zoeken.';msg.style.color='#dc2626';}
 }
 
 function showMsg(id,type,text){
