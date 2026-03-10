@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import secrets
 from contextlib import contextmanager
@@ -622,6 +623,27 @@ Communiceer in de taal van de gebruiker: Nederlands (voorkeur), Engels, Pools of
 - Verzekeringen anders dan zorgverzekeringen
 Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor kunt u contact opnemen met uw bank of een financieel adviseur. Ik help alleen bij vragen over thuiszorg en verzorgingshuizen." """
 
+    @api.get("/geoip")
+    def geoip(request: Request):
+        """IP-geolokalizacja voor kaartcentrum bij paginalaad."""
+        import urllib.request as urlreq
+        # Haal client IP op (Render zet X-Forwarded-For)
+        xff = request.headers.get("x-forwarded-for", "")
+        ip = xff.split(",")[0].strip() if xff else (request.client.host if request.client else "")
+        # Sla lokale/privé IP's over
+        if not ip or ip.startswith(("127.", "10.", "192.168.", "172.", "::1")):
+            return {"lat": None, "lng": None}
+        try:
+            url = f"http://ip-api.com/json/{ip}?fields=lat,lon,status"
+            req = urlreq.Request(url, headers={"User-Agent": "CarefinderNL/1.0"})
+            with urlreq.urlopen(req, timeout=3) as r:
+                d = json.loads(r.read())
+            if d.get("status") == "success":
+                return {"lat": float(d["lat"]), "lng": float(d["lon"])}
+        except Exception:
+            pass
+        return {"lat": None, "lng": None}
+
     @api.post("/ai-assistant")
     async def ai_assistant(data: AIMessage):
         api_key = (
@@ -790,10 +812,14 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
                             city_firms = cur.fetchall()
                     if city_firms:
                         map_firms = [
-                            {"id": r["id"], "name": r["name"], "lat": r["lat"], "lng": r["lng"],
+                            {"id": r["id"], "name": r["name"],
+                             "lat": float(r["lat"]), "lng": float(r["lng"]),
                              "category": r["category"], "city": r.get("city",""),
                              "is_premium": r.get("is_premium", False),
                              "has_vacancy": r.get("has_vacancy", False),
+                             "contact_info": r.get("contact_info",""),
+                             "total_slots": r.get("total_slots",0),
+                             "occupied_slots": r.get("occupied_slots",0),
                              "distance_km": round(float(r.get("dist",0)), 1)}
                             for r in city_firms if r.get("lat") and r.get("lng")
                         ]
@@ -818,9 +844,15 @@ Als een gebruiker vraagt over financiering of leningen, antwoord dan: "Hiervoor 
             nearby_keywords = ["buurt", "omgeving", "nearby", "dichtbij", "dichtstbijzijnde", "in de buurt", "naast mij"]
             if any(kw in data.message.lower() for kw in nearby_keywords) and nearby_firms_list and not map_firms:
                 map_firms = [
-                    {"id": r["id"], "name": r["name"], "lat": r["lat"], "lng": r["lng"],
-                     "category": r["category"], "city": r.get("city",""), "is_premium": r.get("is_premium", False),
-                     "has_vacancy": r.get("has_vacancy", False), "distance_km": round(float(r.get("dist",0)), 1)}
+                    {"id": r["id"], "name": r["name"],
+                     "lat": float(r["lat"]), "lng": float(r["lng"]),
+                     "category": r["category"], "city": r.get("city",""),
+                     "is_premium": r.get("is_premium", False),
+                     "has_vacancy": r.get("has_vacancy", False),
+                     "contact_info": r.get("contact_info",""),
+                     "total_slots": r.get("total_slots",0),
+                     "occupied_slots": r.get("occupied_slots",0),
+                     "distance_km": round(float(r.get("dist",0)), 1)}
                     for r in nearby_firms_list if r.get("lat") and r.get("lng")
                 ]
                 if not map_lat and map_firms:

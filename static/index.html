@@ -350,7 +350,7 @@ function renderMarkers(firms) {
 /* ── LOAD FIRMS ── */
 async function loadFirms(cat) {
   activeFilter = cat;
-  const url = cat ? `/api/firms?category=${cat}&limit=2000` : '/api/firms?limit=2000';
+  const url = cat ? `/api/firms?category=${cat}&limit=5000` : '/api/firms?limit=5000';
   try {
     const firms = await fetch(url).then(r => r.json());
     allFirms = firms;
@@ -435,16 +435,30 @@ async function loadNearby() {
 }
 
 /* ── IP GEOLOCATION ── */
+async function geoByIP() {
+  try {
+    const d = await fetch('/api/geoip').then(r => r.json());
+    if (d.lat && d.lng) {
+      userPos = [d.lat, d.lng];
+      map.panTo({lat: d.lat, lng: d.lng});
+      map.setZoom(11);
+    }
+  } catch(e) {}
+}
+
 function initGeoLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      pos => { userPos=[pos.coords.latitude, pos.coords.longitude]; map.panTo({lat:userPos[0],lng:userPos[1]}); map.setZoom(12); },
-      async () => {
-        try { const d=await fetch('https://ipapi.co/json/').then(r=>r.json()); if(d.latitude){userPos=[d.latitude,d.longitude];map.panTo({lat:userPos[0],lng:userPos[1]});map.setZoom(11);} } catch(e){}
-      }, {timeout:5000}
+      pos => {
+        userPos = [pos.coords.latitude, pos.coords.longitude];
+        map.panTo({lat: userPos[0], lng: userPos[1]});
+        map.setZoom(12);
+      },
+      () => geoByIP(),
+      {timeout: 5000}
     );
   } else {
-    fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{ if(d.latitude){userPos=[d.latitude,d.longitude];map.panTo({lat:userPos[0],lng:userPos[1]});map.setZoom(11);} }).catch(()=>{});
+    geoByIP();
   }
 }
 
