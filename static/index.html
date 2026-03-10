@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Carefinder NL – Thuiszorg & Verzorgingshuizen</title>
 <script src="https://js.stripe.com/v3/"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+
 <style>
 :root{--gold:#e8a800;--blue:#1a6cff;--green:#16a34a;--red:#dc2626;--sidebar:300px;--bg:#f4f6f9;--surface:#ffffff;--border:#dde3ed;--text:#0f172a;--muted:#64748b}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -61,8 +59,10 @@ header{background:var(--surface);border-bottom:3px solid var(--gold);padding:10p
 #ai-input{flex:1;padding:8px 11px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;font-size:13px;outline:none}
 #ai-input:focus{border-color:var(--blue)}
 #ai-send{background:var(--gold);border:none;padding:8px 12px;border-radius:7px;font-weight:700;cursor:pointer;font-size:15px;color:#000}
-.leaflet-popup-content-wrapper{border-radius:10px!important;box-shadow:0 4px 20px rgba(0,0,0,.15)!important;padding:0!important;overflow:hidden}
-.leaflet-popup-content{margin:0!important;min-width:200px}
+.gm-style .gm-style-iw-c{border-radius:10px!important;box-shadow:0 4px 20px rgba(0,0,0,.15)!important;padding:0!important;overflow:hidden;max-width:300px!important}
+.gm-style .gm-style-iw-d{overflow:hidden!important;padding:0!important}
+.gm-style .gm-style-iw-tc::after{background:var(--gold)}
+.gm-ui-hover-effect{top:2px!important;right:2px!important}
 .popup-inner{padding:14px}
 .popup-name{font-weight:800;font-size:15px;margin-bottom:3px;color:#111}
 .popup-cat{font-size:10px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
@@ -181,64 +181,62 @@ footer a:hover{color:var(--gold)}
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
 <script>
 /* ── CONFIG ── */
 const STRIPE_PUB = "{{ stripe_pub }}";
 const stripe = STRIPE_PUB && STRIPE_PUB !== 'None' && STRIPE_PUB !== '' ? Stripe(STRIPE_PUB) : null;
 
-/* ── MAP INIT ── */
-const map = L.map('map', {center:[52.37,5.30], zoom:8, zoomControl:true, maxBounds:[[49.5,2.0],[54.0,8.0]], maxBoundsViscosity:0.7});
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution:'&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
-  maxZoom:19
-}).addTo(map);
+/* ── MAP GLOBALS ── */
+let map, clusterer, infoWindow;
+let allFirms = [], activeFilter = null, gmMarkers = [];
 
-/* ── CLUSTER GROUP ── */
-const cluster = L.markerClusterGroup({
-  maxClusterRadius: 60,
-  spiderfyOnMaxZoom: true,
-  showCoverageOnHover: false,
-  iconCreateFunction: function(c) {
-    const n = c.getChildCount();
-    const hasPremium = c.getAllChildMarkers().some(m => m.options.isPremium);
-    const bg = hasPremium ? '#ffd700' : '#3b82f6';
-    const fg = hasPremium ? '#7a5800' : '#fff';
-    return L.divIcon({
-      html:`<div style="width:36px;height:36px;background:${bg};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:${fg};box-shadow:0 2px 8px rgba(0,0,0,.35);border:2px solid #fff">${n}</div>`,
-      className:'', iconSize:[36,36]
-    });
-  }
-});
-map.addLayer(cluster);
-let allFirms = [], activeFilter = null;
+/* ── MAP INIT (called by Google Maps callback) ── */
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: 52.37, lng: 5.30},
+    zoom: 8,
+    mapId: 'carefinder_map',
+    restriction: {latLngBounds:{north:54.0,south:49.5,west:2.0,east:8.0}, strictBounds:false},
+    streetViewControl: false,
+    mapTypeControl: false,
+    fullscreenControl: false,
+    gestureHandling: 'greedy',
+  });
+  infoWindow = new google.maps.InfoWindow({maxWidth: 300});
+  clusterer = new markerClusterer.MarkerClusterer({
+    map,
+    renderer: {
+      render({count, position, markers}) {
+        const hasPremium = (markers||[]).some(m => m._isPremium);
+        const bg = hasPremium ? '#ffd700' : '#3b82f6';
+        const fg = hasPremium ? '#7a5800' : '#fff';
+        const el = document.createElement('div');
+        el.style.cssText = `width:36px;height:36px;background:${bg};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:${fg};box-shadow:0 2px 8px rgba(0,0,0,.35);border:2px solid #fff;cursor:pointer`;
+        el.textContent = count;
+        return new google.maps.marker.AdvancedMarkerElement({position, content: el, zIndex: 1});
+      }
+    }
+  });
+  loadFirms(null);
+  loadStats();
+  initGeoLocation();
+}
 
 /* ── ICONS ── */
-function makeIcon(isPremium, cat, hasVacancy) {
-  const vacBadge = hasVacancy
-    ? `<div style="position:absolute;top:-7px;right:-9px;background:#f97316;color:#fff;font-size:8px;font-weight:900;padding:1px 4px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4);letter-spacing:.3px">VACATURE</div>`
-    : '';
+function makeMarkerEl(isPremium, cat, hasVacancy) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;cursor:pointer';
   if (isPremium) {
-    return L.divIcon({
-      className:'',
-      html:`<div style="position:relative;width:28px;height:34px">
-        <div style="width:22px;height:22px;background:#ffd700;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #b8860b;box-shadow:0 0 10px rgba(255,215,0,.8)"></div>
-        <div style="position:absolute;top:3px;left:3px;width:10px;height:10px;background:#fff;border-radius:50%;transform:rotate(45deg)"></div>
-        ${vacBadge}
-      </div>`,
-      iconSize:[28,34], iconAnchor:[11,28], popupAnchor:[0,-30]
-    });
+    wrap.innerHTML = `<div style="width:22px;height:22px;background:#ffd700;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #b8860b;box-shadow:0 0 10px rgba(255,215,0,.8)"></div>
+      <div style="position:absolute;top:3px;left:3px;width:10px;height:10px;background:#fff;border-radius:50%;transform:rotate(45deg)"></div>
+      ${hasVacancy ? '<div style="position:absolute;top:-9px;right:-12px;background:#f97316;color:#fff;font-size:8px;font-weight:900;padding:1px 4px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)">VACATURE</div>' : ''}`;
+  } else {
+    const color = cat === 'thuiszorg' ? '#22c55e' : '#3b82f6';
+    wrap.innerHTML = `<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px ${color}99"></div>
+      ${hasVacancy ? '<div style="position:absolute;top:-9px;right:-12px;background:#f97316;color:#fff;font-size:8px;font-weight:900;padding:1px 4px;border-radius:10px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)">VACATURE</div>' : ''}`;
   }
-  const color = cat === 'thuiszorg' ? '#22c55e' : '#3b82f6';
-  return L.divIcon({
-    className:'',
-    html:`<div style="position:relative;width:22px;height:18px">
-      <div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px ${color}99"></div>
-      ${vacBadge}
-    </div>`,
-    iconSize:[22,18], iconAnchor:[7,7], popupAnchor:[0,-10]
-  });
+  return wrap;
 }
 
 /* ── POPUP BUILDER ── */
@@ -332,25 +330,39 @@ async function sendContact(companyId) {
 
 /* ── RENDER MARKERS ── */
 function renderMarkers(firms) {
-  cluster.clearLayers();
+  // Remove old markers
+  gmMarkers.forEach(m => m.map = null);
+  gmMarkers = [];
+  clusterer.clearMarkers();
+
+  const newMarkers = [];
   firms.forEach(f => {
     if (!f.lat || !f.lng) return;
-    const marker = L.marker([f.lat, f.lng], {
-      icon: makeIcon(f.is_premium, f.category, f.has_vacancy),
-      isPremium: !!f.is_premium
+    const el = makeMarkerEl(f.is_premium, f.category, f.has_vacancy);
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      position: {lat: parseFloat(f.lat), lng: parseFloat(f.lng)},
+      content: el,
+      title: f.name,
+      map: null,
     });
+    marker._isPremium = !!f.is_premium;
+
     if (f.is_premium) {
-      marker.bindPopup(buildPopup(f), {maxWidth: 290});
-      if (f.id) {
-        marker.on('click', () => {
-          fetch(`/api/firms/${f.id}/click`, {method: 'POST'}).catch(()=>{});
-        });
-      }
+      marker.addListener('click', () => {
+        infoWindow.setContent(`<div style="min-width:220px">${buildPopup(f)}</div>`);
+        infoWindow.open({anchor: marker, map});
+        if (f.id) fetch(`/api/firms/${f.id}/click`, {method:'POST'}).catch(()=>{});
+      });
     } else {
-      marker.bindTooltip(esc(f.name), {permanent: false, direction: 'top', className: 'marker-tooltip-basic'});
+      // tooltip on hover via title — naam alleen zichtbaar als Google tooltip
+      el.addEventListener('mouseenter', () => {
+        el.setAttribute('title', esc(f.name));
+      });
     }
-    cluster.addLayer(marker);
+    gmMarkers.push(marker);
+    newMarkers.push(marker);
   });
+  clusterer.addMarkers(newMarkers);
 }
 
 /* ── LOAD FIRMS ── */
@@ -412,7 +424,7 @@ async function loadAds() {
   } catch(e) {}
 }
 
-function flyTo(lat, lng) { map.setView([lat, lng], 15, {animate:true, duration:1.2}); }
+function flyTo(lat, lng) { map.panTo({lat: parseFloat(lat), lng: parseFloat(lng)}); map.setZoom(15); }
 
 /* ── W MOJEJ OKOLICY ── */
 let userPos = null;
@@ -423,7 +435,7 @@ async function loadNearby() {
       const firms = await fetch(`/api/firms/nearby?lat=${lat}&lng=${lng}&radius_km=50&limit=200`).then(r=>r.json());
       allFirms = firms;
       renderMarkers(firms);
-      map.setView([lat, lng], 11, {animate:true, duration:1.2});
+      map.panTo({lat, lng}); map.setZoom(11);
       showToast(`📍 ${firms.length} aanbieders gevonden binnen 50 km`);
     } catch(e) { showToast('Fout bij laden nabije aanbieders'); }
   }
@@ -441,23 +453,18 @@ async function loadNearby() {
 }
 
 /* ── IP GEOLOCATION ── */
-(async () => {
-  try {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => { userPos=[pos.coords.latitude, pos.coords.longitude]; map.setView(userPos, 12, {animate:true}); },
-        async () => {
-          const d = await fetch('https://ipapi.co/json/').then(r=>r.json());
-          if (d.latitude) { userPos=[d.latitude,d.longitude]; map.setView(userPos, 11, {animate:true}); }
-        },
-        {timeout:5000}
-      );
-    } else {
-      const d = await fetch('https://ipapi.co/json/').then(r=>r.json());
-      if (d.latitude) { userPos=[d.latitude,d.longitude]; map.setView(userPos, 11, {animate:true}); }
-    }
-  } catch(e) {}
-})();
+function initGeoLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => { userPos=[pos.coords.latitude, pos.coords.longitude]; map.panTo({lat:userPos[0],lng:userPos[1]}); map.setZoom(12); },
+      async () => {
+        try { const d=await fetch('https://ipapi.co/json/').then(r=>r.json()); if(d.latitude){userPos=[d.latitude,d.longitude];map.panTo({lat:userPos[0],lng:userPos[1]});map.setZoom(11);} } catch(e){}
+      }, {timeout:5000}
+    );
+  } else {
+    fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{ if(d.latitude){userPos=[d.latitude,d.longitude];map.panTo({lat:userPos[0],lng:userPos[1]});map.setZoom(11);} }).catch(()=>{});
+  }
+}
 
 /* ── SEARCH ── */
 let st;
@@ -540,11 +547,11 @@ async function sendAI() {
 
   // Build rich map context for AI
   const b = map.getBounds();
-  const center = b.getCenter();
-  const visibleFirms = allFirms.filter(f =>
-    f.lat && f.lng && b.contains([f.lat, f.lng])
-  ).slice(0, 10).map(f => `${f.name} (${f.category}${f.city?', '+f.city:''}${f.is_premium?' ⭐':''})`).join('; ');
-  const ctx = `Kaartcentrum: ${center.lat.toFixed(3)},${center.lng.toFixed(3)} | Zoom: ${map.getZoom()} | Filter: ${activeFilter||'alles'} | Zichtbare aanbieders: ${visibleFirms||'geen'}`;
+  const center = map.getCenter();
+  const visibleFirms = b ? allFirms.filter(f =>
+    f.lat && f.lng && b.contains(new google.maps.LatLng(parseFloat(f.lat), parseFloat(f.lng)))
+  ).slice(0, 10).map(f => `${f.name} (${f.category}${f.city?', '+f.city:''}${f.is_premium?' ⭐':''})`).join('; ') : '';
+  const ctx = `Kaartcentrum: ${center.lat().toFixed(3)},${center.lng().toFixed(3)} | Zoom: ${map.getZoom()} | Filter: ${activeFilter||'alles'} | Zichtbare aanbieders: ${visibleFirms||'geen'}`;
 
   try {
     const r = await fetch('/api/ai-assistant', {
@@ -555,7 +562,7 @@ async function sendAI() {
     typing.remove();
     box.innerHTML += `<div class="msg-ai">${esc(d.reply||'Geen antwoord')}</div>`;
     if (d.map_lat && d.map_lng) {
-      map.setView([d.map_lat, d.map_lng], d.map_zoom || 13, {animate: true, duration: 1.2});
+      map.panTo({lat: parseFloat(d.map_lat), lng: parseFloat(d.map_lng)}); map.setZoom(d.map_zoom || 13);
       if (d.map_label) {
         box.innerHTML += `<div class="msg-ai" style="font-size:11px;color:#94a3b8">📍 Kaart verplaatst naar: <strong>${esc(d.map_label)}</strong></div>`;
       }
@@ -601,17 +608,12 @@ function setLang(l) {
   document.getElementById('ai-input').placeholder = t.aiph;
 }
 
-/* ── PREMIUM AUTO-MONITOR ── */
-// Refresh markers every 5 minutes to pick up premium status changes
-setInterval(() => loadFirms(activeFilter), 5 * 60 * 1000);
-
-/* ── KEEP-ALIVE ── */
-// Ping server every 10 min zodat Render niet in slaap valt
+/* ── AUTO-MONITOR + KEEP-ALIVE ── */
+setInterval(() => { if(typeof loadFirms==='function' && map) loadFirms(activeFilter); }, 5 * 60 * 1000);
 setInterval(() => fetch('/api/health').catch(()=>{}), 10 * 60 * 1000);
-
-/* ── INIT ── */
-loadFirms(null);
-loadStats();
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&libraries=marker&callback=initMap&loading=async">
 </script>
 </body>
 </html>

@@ -244,7 +244,8 @@ def create_app(static_dir: str) -> FastAPI:
         js_hash = get_file_hash(os.path.join(static_dir, "app.js"))
         return templates.TemplateResponse(
             request, "index.html",
-            {"css_hash": css_hash, "js_hash": js_hash, "stripe_pub": get_stripe_pub()},
+            {"css_hash": css_hash, "js_hash": js_hash, "stripe_pub": get_stripe_pub(),
+             "gmaps_key": os.environ.get("GOOGLE_MAPS_API_KEY", "")},
         )
 
     @app.get("/login", response_class=HTMLResponse)
