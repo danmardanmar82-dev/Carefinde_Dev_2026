@@ -533,6 +533,14 @@ def create_app(static_dir: str) -> FastAPI:
                     )
         return {"status": "success"}
 
+    @api.delete("/admin/firm/{firm_id}")
+    def admin_delete_firm(firm_id: int, request: Request):
+        require_admin(request)
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM companies WHERE id=%s", (firm_id,))
+        return {"status": "deleted", "id": firm_id}
+
     @api.post("/admin/add_firm")
     def admin_add_firm(data: AdminAddFirm, request: Request):
         require_admin(request)
