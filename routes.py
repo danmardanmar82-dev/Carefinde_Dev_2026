@@ -539,12 +539,11 @@ def create_app(static_dir: str) -> FastAPI:
         with get_db() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    """INSERT INTO companies (name,category,city,lat,lng,contact_info,is_premium,is_real,has_vacancy)
-                       VALUES (%s,%s,%s,%s,%s,%s,FALSE,TRUE,FALSE) RETURNING id""",
+                    """INSERT INTO companies (name,category,city,lat,lng,contact_info,is_premium,is_real,has_vacancy,owner_username)
+                       VALUES (%s,%s,%s,%s,%s,%s,FALSE,TRUE,FALSE,'admin')""",
                     (data.name.strip(), data.category, data.city.strip(), data.lat, data.lng, data.contact_info)
                 )
-                row = cur.fetchone()
-        return {"status": "success", "id": row["id"]}
+        return {"status": "success"}
 
     @api.post("/admin/reset-premium")
     def admin_reset_premium(request: Request):
